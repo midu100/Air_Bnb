@@ -6,6 +6,10 @@ const propertyRoute = require('./property')
 const amenityRoute = require('./amenity')
 const bookingRoute = require('./booking')
 const reviewRoute = require('./review')
+const wishlistRoute = require('./wishlist')
+const paymentRoute = require('./payment')
+const conversationRoute = require('./conversation')
+const messageRoute = require('./message')
 
 // root endpoints for checking server,Server starting or not.
 route.get('/',(req,res)=>{
@@ -18,6 +22,10 @@ route.use('/property',propertyRoute)
 route.use('/amenity',amenityRoute)
 route.use('/booking',bookingRoute)
 route.use('/review',reviewRoute)
+route.use('/wishlist',wishlistRoute)
+route.use('/payment',paymentRoute)
+route.use('/conversations',conversationRoute)
+route.use('/api/messages',messageRoute)
 
 
 // for any invalid endpoints or route
