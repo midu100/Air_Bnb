@@ -29,10 +29,12 @@ const createBooking = async(req,res)=>{
 
         const existingBooking = await bookingSchema.findOne({
             property : propertyId,
-            bookingStatus : {$in : ['pending','confirmed']},
-            $or : [
-                {checkInDate : {$lt : checkOut},checkOutDate : {$gt : checkIn}}
-            ]
+            $or: [
+                { bookingStatus: 'confirmed' },
+                { bookingStatus: 'pending', expiresAt: { $gt: new Date() } }
+            ],
+            checkInDate : {$lt : checkOut},
+            checkOutDate : {$gt : checkIn}
         })
         if(existingBooking) return res.status(400).send({message : 'Property is already booked for these dates'})
 
@@ -55,6 +57,7 @@ const createBooking = async(req,res)=>{
             cleaningFee : property.cleaningFee,
             serviceFee : property.serviceFee,
             totalAmount,
+            expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 minutes payment window
         })
         await booking.save()
 
@@ -210,4 +213,29 @@ const completeBooking = async(req,res)=>{
     }
 }
 
-module.exports = {createBooking,getMyBookings,getHostBookings,getBookingById,cancelBooking,confirmBooking,completeBooking}
+const getPropertyAvailability = async (req, res) => {
+    try {
+        const { propertyId } = req.params;
+
+        if (!propertyId) {
+            return res.status(400).send({ message: 'Property id is required' });
+        }
+
+        const bookings = await bookingSchema.find({
+            property: propertyId,
+            checkOutDate: { $gte: new Date() },
+            $or: [
+                { bookingStatus: 'confirmed' },
+                { bookingStatus: 'pending', expiresAt: { $gt: new Date() } }
+            ]
+        }).select('checkInDate checkOutDate -_id');
+
+        res.status(200).send({ success: true, data: bookings });
+    } catch (error) {
+        console.log(error);
+        res.status(500).send({ message: 'Server error' });
+    }
+}
+
+module.exports = {createBooking,getMyBookings,getHostBookings,getBookingById,cancelBooking,confirmBooking,completeBooking,getPropertyAvailability}
+

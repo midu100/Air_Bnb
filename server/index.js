@@ -6,6 +6,7 @@ const dbConfig = require('./dbConfig')
 const route = require('./routes')
 const { generateOTP } = require('./sevices/helpers')
 const claudinaryConfig = require('./sevices/claudinaryConfig')
+const startBookingExpiryCleanup = require('./sevices/bookingCleanup')
 
 const app = express()
 const port = 8000
@@ -39,6 +40,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser())
 dbConfig()
 claudinaryConfig()
+startBookingExpiryCleanup()
 app.use(route)
 
 httpServer.listen(port,()=>{

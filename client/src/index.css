@@ -1,0 +1,211 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Urbanist", system-ui, -apple-system, sans-serif;
+  --font-display: "Urbanist", system-ui, -apple-system, sans-serif;
+  
+  --color-brand: #f0506e;
+  --color-brand-dark: #e03858;
+  --color-brand-light: #fce4ec;
+  
+  --animate-fade-in-up: fade-in-up 0.6s ease-out forwards;
+  --animate-fade-in: fade-in 0.4s ease-out forwards;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+}
+
+/* Base */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #ffffff;
+  color: #1a1a2e;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #f0506e;
+}
+
+/* Utility: text accent gradient */
+.text-accent {
+  color: #f0506e;
+}
+
+.text-gradient-brand {
+  background: linear-gradient(135deg, #f0506e 0%, #e03858 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Clean card with subtle shadow (smartLET style) */
+.card-clean {
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.card-clean:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Glass search bar overlay (for hero) */
+.search-panel {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid #e8e8e8;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Input field style */
+.input-clean {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  color: #1a1a2e;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  transition: all 0.3s ease;
+}
+
+.input-clean:focus {
+  border-color: #f0506e;
+  box-shadow: 0 0 0 3px rgba(240, 80, 110, 0.1);
+  outline: none;
+}
+
+.input-clean::placeholder {
+  color: #aaa;
+}
+
+/* Brand button */
+.btn-brand {
+  background: linear-gradient(135deg, #f0506e, #e03858);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 10px 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(240, 80, 110, 0.25);
+}
+
+.btn-brand:hover {
+  background: linear-gradient(135deg, #e03858, #c52d4a);
+  box-shadow: 0 4px 16px rgba(240, 80, 110, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-brand:active {
+  transform: scale(0.97);
+}
+
+/* Outline brand button */
+.btn-outline-brand {
+  background: transparent;
+  color: #f0506e;
+  border: 1.5px solid #f0506e;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 10px 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-brand:hover {
+  background: #fce4ec;
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}  
+
+
+/* btn1 */
+/* From Uiverse.io by MuhammadHasann */ 
+/* From Uiverse.io by Madflows */ 
+.button {
+  position: relative;
+  overflow: hidden;
+  height: 3rem;
+  padding: 0 2rem;
+  border-radius: 1.5rem;
+  background: #3d3a4e;
+  background-size: 400%;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+.button:hover::before {
+  transform: scaleX(1);
+}
+
+.button-content {
+  position: relative;
+  z-index: 1;
+}
+
+.button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  width: 100%;
+  height: inherit;
+  border-radius: inherit;
+  background: linear-gradient(
+    82.3deg,
+    rgb(6, 6, 6) 10.8%,
+    rgb(9, 9, 9) 94.3%
+  );
+  transition: all 0.475s;
+}

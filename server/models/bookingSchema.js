@@ -77,13 +77,20 @@ const bookingSchema = new mongoose.Schema(
         "pending",
         "paid",
         "refunded",
+        "failed",
       ],
       default: "pending",
+    },
+
+    expiresAt: {
+      type: Date,
     },
   },
   {
     timestamps: true,
   }
 );
+
+bookingSchema.index({ property: 1, checkInDate: 1, checkOutDate: 1 });
 
 module.exports = mongoose.model('booking',bookingSchema)
