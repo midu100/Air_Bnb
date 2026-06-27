@@ -44,7 +44,7 @@ const Navbar = () => {
   }
 
   const linkClass = ({ isActive }) =>
-    `text-sm font-medium transition-colors hover:text-[#f0506e] ${
+    `text-xl font-medium transition-colors hover:text-[#f0506e] ${
       isActive ? 'text-[#f0506e]' : 'text-gray-600'
     }`
     
@@ -75,7 +75,7 @@ const Navbar = () => {
               </svg>
             </div>
             <span className="font-display font-bold text-xl tracking-tight text-gray-800 group-hover:text-[#f0506e] transition-colors">
-              Air<span className="text-[#f0506e]">Bnb</span>
+              Easy<span className="text-[#f0506e]">Let</span>
             </span>
           </Link>
 
@@ -85,30 +85,17 @@ const Navbar = () => {
             <NavLink to="/properties" className={linkClass}>Find Properties</NavLink>
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="text-sm font-medium text-gray-600 hover:text-[#f0506e] transition-colors cursor-pointer bg-transparent border-none"
+              className="text-xl font-medium text-gray-600 hover:text-[#f0506e] transition-colors cursor-pointer bg-transparent border-none"
             >
               Add a Property
             </button>
-            <a href="#how-it-works" className="text-sm font-medium text-gray-600 hover:text-[#f0506e] transition-colors">
+            <a href="#how-it-works" className="text-xl font-medium text-gray-600 hover:text-[#f0506e] transition-colors">
               How It Works
             </a>
           </div>
 
           {/* Desktop Action Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            {/* <Link
-              to="/login"
-              className="text-gray-600 hover:text-gray-900 px-5 py-2 rounded-lg text-sm font-medium border border-gray-250 hover:border-gray-350 transition-all cursor-pointer bg-white/40"
-            >
-              Login
-            </Link>
-            <Link
-              to="/register"
-              className="btn-brand text-sm cursor-pointer rounded-full px-5 py-2"
-            >
-              Sign Up
-            </Link> */}
-
             <ButtonOne onClick={handleLogin} name={"Login"}/>
             <ButtonOne onClick={handleSignUp} name={"Sign Up"}/>
           </div>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import heroVdo from '../assets/videos/hero.mp4'
+import SearchBar from './common/SearchBar'
+import ButtonOne from './common/ButtonOne'
 
 const HeroSection = () => {
   const navigate = useNavigate()
@@ -89,65 +91,18 @@ const HeroSection = () => {
         {/* Search Panel (smartLET-style: white card, subtle shadow) */}
         <form
           onSubmit={handleSearch}
-          className="search-panel w-full max-w-3xl p-3 rounded-2xl flex flex-col md:flex-row gap-3 items-center"
+          className="search-panel w-full max-w-3xl p-3 rounded-full flex flex-col md:flex-row gap-3 items-center"
         >
-          {/* Search Input */}
-          <div className="flex-1 w-full relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <input
-              type="text"
-              placeholder="Search by Area, Popular Landmarks, or Nearby Locations"
-              value={destination}
-              onChange={(e) => setDestination(e.target.value)}
-              className="w-full pl-9 pr-4 py-3 bg-transparent text-gray-700 text-sm focus:outline-none placeholder-gray-400 border-none"
-            />
-          </div>
+         
+
+          <SearchBar placeholder={'Search by your area.'} />
 
           {/* Divider */}
           <div className="hidden md:block w-px h-8 bg-gray-200"></div>
 
-          {/* Check-In */}
-          <div className="w-full md:w-36 text-left px-3">
-            <label className="block text-[10px] uppercase font-semibold tracking-wider text-gray-400 mb-0.5">
-              Check in
-            </label>
-            <input
-              type="date"
-              value={checkIn}
-              onChange={(e) => setCheckIn(e.target.value)}
-              className="w-full bg-transparent text-gray-600 text-xs font-medium focus:outline-none cursor-pointer border-none p-0"
-            />
-          </div>
-
           <div className="hidden md:block w-px h-8 bg-gray-200"></div>
 
-          {/* Check-Out */}
-          <div className="w-full md:w-36 text-left px-3">
-            <label className="block text-[10px] uppercase font-semibold tracking-wider text-gray-400 mb-0.5">
-              Check out
-            </label>
-            <input
-              type="date"
-              value={checkOut}
-              onChange={(e) => setCheckOut(e.target.value)}
-              className="w-full bg-transparent text-gray-600 text-xs font-medium focus:outline-none cursor-pointer border-none p-0"
-            />
-          </div>
-
-          {/* Search Button */}
-          <button
-            type="submit"
-            className="btn-brand w-full md:w-auto px-8 py-3 rounded-xl text-sm flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            Search
-          </button>
+          <ButtonOne name={'Search'} />
         </form>
       </div>
 
