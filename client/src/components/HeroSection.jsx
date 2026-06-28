@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import heroVdo from '../assets/videos/hero.mp4'
 import SearchBar from './common/SearchBar'
 import ButtonOne from './common/ButtonOne'
+import { Typewriter } from 'react-simple-typewriter'
 
 const HeroSection = () => {
   const navigate = useNavigate()
@@ -72,7 +73,7 @@ const HeroSection = () => {
         {/* Title */}
         <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-extrabold tracking-tight mb-2 text-white max-w-4xl leading-tight">
           Renting Made{' '}
-          <span className="text-[#f0506e]">Smart</span>
+          <span className="text-[#e6e625]"><Typewriter loop={false} typeSpeed={20} words={['Smart','Easy']}/></span>
         </h1>
 
         {/* Typewriter subtitle */}
@@ -81,6 +82,8 @@ const HeroSection = () => {
             {currentText}
             <span className="inline-block w-0.5 h-6 sm:h-7 ml-1 bg-[#f0506e] animate-pulse align-middle"></span>
           </span>
+
+          
         </div>
 
         {/* Subtitle */}
