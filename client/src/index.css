@@ -190,6 +190,7 @@ body {
 .button-content {
   position: relative;
   z-index: 1;
+  font-weight: 500;
 }
 
 .button::before {

@@ -2,20 +2,17 @@ import React from 'react'
 import { Link } from 'react-router'
 
 const PropertyCard = ({ property }) => {
-  const {
-    id,
-    title,
-    location,
-    price,
-    rating,
-    reviews,
-    image,
-    category,
-    beds,
-    baths,
-    guests,
-    isGuestFavorite
-  } = property
+  const id = property._id || property.id;
+  const title = property.title;
+  const location = property.city && property.country ? `${property.city}, ${property.country}` : (property.location || "");
+  const price = property.pricePerNight || property.price || 0;
+  const rating = property.averageRating !== undefined ? property.averageRating : (property.rating || 0);
+  const reviews = property.totalReviews !== undefined ? property.totalReviews : (property.reviews || 0);
+  const image = property.thumbnail || property.image || "https://picsum.photos/400/300";
+  const beds = property.beds || 1;
+  const baths = property.bathrooms || property.baths || 1;
+  const guests = property.maxGuests || property.guests || 2;
+  const isGuestFavorite = property.isGuestFavorite || property.isFeatured;
 
   return (
     <div className="card-clean overflow-hidden group relative flex flex-col h-full">

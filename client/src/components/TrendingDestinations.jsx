@@ -50,7 +50,7 @@ const TrendingDestinations = () => {
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 font-sans">
       {/* Section Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-display font-bold text-gray-900 tracking-tight">
+        <h2 className="text-3xl font-display font-bold text-gray-900 tracking-tight">
           Trending destinations
         </h2>
         <p className="text-sm text-gray-400 mt-1">
@@ -63,7 +63,7 @@ const TrendingDestinations = () => {
         {DESTINATIONS.slice(0, 2).map((dest) => (
           <div
             key={dest.id}
-            className="group relative h-[260px] md:h-[300px] rounded-xl overflow-hidden cursor-pointer"
+            className="group relative h-[260px] md:h-[390px] rounded-xl overflow-hidden cursor-pointer"
           >
             <img
               src={dest.image}
@@ -95,7 +95,7 @@ const TrendingDestinations = () => {
         {DESTINATIONS.slice(2, 5).map((dest) => (
           <div
             key={dest.id}
-            className="group relative h-[200px] md:h-[220px] rounded-xl overflow-hidden cursor-pointer"
+            className="group relative h-[200px] md:h-[250px] rounded-xl overflow-hidden cursor-pointer"
           >
             <img
               src={dest.image}

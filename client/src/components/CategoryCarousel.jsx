@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react'
 import CategoryCard from './CategoryCard'
+import CommonHead from './common/CommonHead'
 
 const CATEGORIES = [
   {
@@ -93,12 +94,8 @@ const CategoryCarousel = ({ activeCategory, onSelectCategory }) => {
     <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 font-sans">
       {/* Section Header */}
       <div className="flex items-end justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-display font-bold text-gray-900 tracking-tight">
-            Browse by property type
-          </h2>
-          <p className="text-sm text-gray-400 mt-1">Find the perfect place to stay for your next trip</p>
-        </div>
+        
+        <CommonHead name={'Browse by property type'} des={'Find the perfect place to stay for your next trip'}/>
 
         {/* Arrow Navigation */}
         <div className="flex gap-2">

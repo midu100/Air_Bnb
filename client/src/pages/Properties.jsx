@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router'
-import { MOCK_PROPERTIES } from '../data/mockProperties'
-import PropertyCard from '../components/PropertyCard'
-import { CATEGORIES } from '../components/CategoryCarousel'
+import { propertyServices } from '../api'
 
 const Properties = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const destParam = searchParams.get('destination') || ''
   const guestParam = searchParams.get('guests') || '1'
 
+  const [properties, setProperties] = useState([])
+  const [loading, setLoading] = useState(true)
   const [destination, setDestination] = useState(destParam)
   const [guests, setGuests] = useState(guestParam)
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -20,23 +18,52 @@ const Properties = () => {
     setGuests(guestParam)
   }, [destParam, guestParam])
 
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        setLoading(true)
+        const res = await propertyServices.getAll({ limit: 100 })
+        if (res?.properties) {
+          setProperties(res.properties)
+        }
+      } catch (error) {
+        console.error("Error fetching properties:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchProperties()
+  }, [])
+
   // Filter properties
-  const filteredProperties = MOCK_PROPERTIES.filter((prop) => {
+  const filteredProperties = properties.filter((prop) => {
     // Destination filter (case insensitive substring)
+    const titleLower = (prop.title || "").toLowerCase()
+    const cityLower = (prop.city || "").toLowerCase()
+    const countryLower = (prop.country || "").toLowerCase()
+    const locLower = (prop.location || "").toLowerCase()
+    const destLower = destination.toLowerCase()
+
     const matchesDest =
       !destination ||
-      prop.location.toLowerCase().includes(destination.toLowerCase()) ||
-      prop.title.toLowerCase().includes(destination.toLowerCase())
+      titleLower.includes(destLower) ||
+      cityLower.includes(destLower) ||
+      countryLower.includes(destLower) ||
+      locLower.includes(destLower)
 
     // Guest filter
-    const matchesGuests = prop.guests >= parseInt(guests, 10)
+    const propGuests = prop.maxGuests || prop.guests || 2
+    const matchesGuests = propGuests >= parseInt(guests, 10)
 
     // Category filter
     const matchesCategory =
-      selectedCategory === 'all' || prop.category === selectedCategory
+      selectedCategory === 'all' || 
+      (prop.category?._id || prop.category) === selectedCategory ||
+      (prop.category?.slug) === selectedCategory
 
     // Price filter
-    const matchesPrice = prop.price <= maxPrice
+    const propPrice = prop.pricePerNight || prop.price || 0
+    const matchesPrice = propPrice <= maxPrice
 
     return matchesDest && matchesGuests && matchesCategory && matchesPrice
   })

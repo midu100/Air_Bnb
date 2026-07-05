@@ -29,6 +29,8 @@ const slides = [
   },
 ];
 
+import { authServices } from "../api";
+
 const Register = () => {
   const navigate = useNavigate();
 
@@ -40,7 +42,7 @@ const Register = () => {
 
   const [errors, setErrors] = useState("");
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
 
     if (!formData.name) {
@@ -55,21 +57,35 @@ const Register = () => {
       return setErrors("Password is required.");
     }
 
-    if (formData.password.length < 8) {
-      return setErrors("Password must be at least 8 characters.");
+    if (formData.password.length < 6) {
+      return setErrors("Password must be at least 6 characters.");
     }
 
-    // Fake register success
-    toast.success("Account created successfully!", {
-      duration: 3000,
-      position: "top-center",
-    });
+    try {
+      const signupData = {
+        fullName: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: "user", // Default role
+      };
 
-    console.log(formData);
+      const res = await authServices.signup(signupData);
+      toast.success(res.message || "Registration successful! OTP sent to your email.", {
+        duration: 4000,
+        position: "top-center",
+      });
 
-    setTimeout(() => {
-      navigate("/login");
-    }, 2000);
+      setTimeout(() => {
+        navigate("/verify-otp", { state: { email: formData.email } });
+      }, 2000);
+    } catch (error) {
+      const errorMsg = error?.response?.data?.message || "Registration failed. Please check your inputs.";
+      setErrors(errorMsg);
+      toast.error(errorMsg, {
+        duration: 3000,
+        position: "top-center",
+      });
+    }
   };
 
   return (
