@@ -2,6 +2,7 @@ import React from 'react';
 import { HiOutlineArrowUp, HiOutlineArrowDown } from 'react-icons/hi';
 import RevenueChart from '../../components/admin/RevenueChart';
 import { REVENUE_CHART_DATA } from '../../data/adminMockData';
+import { toast } from 'react-hot-toast';
 
 const Analytics = () => {
   return (
@@ -96,7 +97,10 @@ const Analytics = () => {
           </div>
           
           <div className="pt-4 border-t border-neutral-100 text-center">
-            <button className="text-xs font-bold uppercase tracking-wider border border-neutral-200 hover:bg-neutral-50 px-4 py-2 w-full rounded cursor-pointer transition-colors">
+            <button 
+              onClick={() => toast.success('Analytics report exported successfully!')}
+              className="text-xs font-bold uppercase tracking-wider border border-neutral-200 hover:bg-neutral-50 px-4 py-2 w-full rounded cursor-pointer transition-colors"
+            >
               Export PDF Report
             </button>
           </div>

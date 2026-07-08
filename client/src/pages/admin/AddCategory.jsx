@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import AdminCommonHead from '../../components/common/adminCommon/AdminCommonHead';
-
-import { categoryServices } from '../../api';
+import { useCreateCategoryMutation } from '../../store/api/categoryApi';
+import { toast } from 'react-hot-toast';
 
 const AddCategory = () => {
   const navigate = useNavigate();
@@ -12,7 +12,7 @@ const AddCategory = () => {
     description: ''
   });
   const [thumbnailFile, setThumbnailFile] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [createCategory, { isLoading: loading }] = useCreateCategoryMutation();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,11 +28,10 @@ const AddCategory = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!thumbnailFile) {
-      alert('Category thumbnail is required');
+      toast.error('Category thumbnail is required');
       return;
     }
     
-    setLoading(true);
     try {
       const fd = new FormData();
       fd.append('name', formData.name);
@@ -40,14 +39,12 @@ const AddCategory = () => {
       fd.append('description', formData.description);
       fd.append('thumbnail', thumbnailFile);
 
-      await categoryServices.create(fd);
-      alert(`Success: Category "${formData.name}" has been created!`);
+      await createCategory(fd).unwrap();
+      toast.success(`Category "${formData.name}" has been created!`);
       navigate('/admin/categories');
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.message || 'Failed to create category. Please check your details.');
-    } finally {
-      setLoading(false);
+      toast.error(error?.data?.message || 'Failed to create category. Please check your details.');
     }
   };
 

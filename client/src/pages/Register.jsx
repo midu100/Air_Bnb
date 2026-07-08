@@ -29,7 +29,7 @@ const slides = [
   },
 ];
 
-import { authServices } from "../api";
+import { useSignUpMutation } from "../store/api/authApi";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -41,6 +41,7 @@ const Register = () => {
   });
 
   const [errors, setErrors] = useState("");
+  const [signUp, { isLoading }] = useSignUpMutation();
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -66,10 +67,10 @@ const Register = () => {
         fullName: formData.name,
         email: formData.email,
         password: formData.password,
-        role: "user", // Default role
+        role: "guest", // Default role matching user model default
       };
 
-      const res = await authServices.signup(signupData);
+      const res = await signUp(signupData).unwrap();
       toast.success(res.message || "Registration successful! OTP sent to your email.", {
         duration: 4000,
         position: "top-center",
@@ -79,7 +80,7 @@ const Register = () => {
         navigate("/verify-otp", { state: { email: formData.email } });
       }, 2000);
     } catch (error) {
-      const errorMsg = error?.response?.data?.message || "Registration failed. Please check your inputs.";
+      const errorMsg = error?.data?.message || "Registration failed. Please check your inputs.";
       setErrors(errorMsg);
       toast.error(errorMsg, {
         duration: 3000,
@@ -87,6 +88,7 @@ const Register = () => {
       });
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">

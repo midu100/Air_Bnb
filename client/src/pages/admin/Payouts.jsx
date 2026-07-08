@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { HiOutlineCash, HiOutlineCheckCircle } from 'react-icons/hi';
+import { toast } from 'react-hot-toast';
 
 const Payouts = () => {
   const [payouts, setPayouts] = useState([
@@ -13,7 +14,7 @@ const Payouts = () => {
       setPayouts(prev => 
         prev.map(p => p.id === id ? { ...p, status: 'completed', date: new Date().toISOString().split('T')[0] } : p)
       );
-      alert('Payout processed successfully!');
+      toast.success('Payout processed successfully!');
     }
   };
 

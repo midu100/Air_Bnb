@@ -1,11 +1,22 @@
 import React, { useState, useEffect } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router'
+import { useSelector, useDispatch } from 'react-redux'
+import { selectCartCount, toggleCart } from '../store/slices/cartSlice'
+import { selectIsAuthenticated, selectCurrentUser, setCredentials, logout } from '../store/slices/authSlice'
+import { useGetProfileQuery } from '../store/api/authApi'
+import { HiOutlineShoppingCart, HiOutlineUserCircle, HiOutlineLogout, HiOutlineCalendar, HiOutlineHeart, HiOutlineCreditCard } from 'react-icons/hi'
 import ButtonOne from './common/ButtonOne'
 
+
 const Navbar = () => {
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+  
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false) // Toggle profile dropdown
+  
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -16,7 +27,21 @@ const Navbar = () => {
   })
   const [isSubmitted, setIsSubmitted] = useState(false)
 
-  const navigate = useNavigate()
+  // Sync profile status from backend to Redux on mount
+  const { data: profileData } = useGetProfileQuery(undefined, {
+    refetchOnMountOrArgChange: true
+  })
+  
+  const isAuthenticated = useSelector(selectIsAuthenticated)
+  const currentUser = useSelector(selectCurrentUser) || profileData?.userData
+  const cartCount = useSelector(selectCartCount)
+
+  useEffect(() => {
+    if (profileData?.userData) {
+      dispatch(setCredentials({ user: profileData.userData, token: null }))
+    }
+  }, [profileData, dispatch])
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -57,6 +82,14 @@ const Navbar = () => {
         navigate('/register')
     }
 
+    const handleLogout = () => {
+      document.cookie = "X_AS-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      dispatch(logout())
+      setIsProfileOpen(false)
+      navigate('/login')
+    }
+
+
   return (
     <div className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-6 lg:px-8">
       <nav
@@ -95,10 +128,111 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Action Buttons */}
-          <div className="hidden md:flex items-center gap-3">
-            <ButtonOne onClick={handleLogin} name={"Login"}/>
-            <ButtonOne onClick={handleSignUp} name={"Sign Up"}/>
+          <div className="hidden md:flex items-center gap-4">
+            {/* Cart Icon Button */}
+            <button
+              onClick={() => dispatch(toggleCart())}
+              className="relative p-2 rounded-full hover:bg-gray-100 text-gray-600 hover:text-gray-800 transition-colors border-none bg-transparent cursor-pointer"
+              title="Open Stays Cart"
+            >
+              <HiOutlineShoppingCart className="w-6 h-6" />
+              {cartCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 bg-[#f0506e] text-white text-[9px] font-bold rounded-full w-4.5 h-4.5 flex items-center justify-center animate-pulse">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+
+            {isAuthenticated && currentUser ? (
+              <div className="relative">
+                {/* Profile Avatar Button */}
+                <button
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  className="flex items-center gap-2 p-1 rounded-full border border-gray-200 hover:border-gray-400 bg-white shadow-xs transition-all cursor-pointer focus:outline-none"
+                >
+                  <img
+                    src={currentUser.profileImg || "https://picsum.photos/200"}
+                    alt={currentUser.fullName}
+                    className="w-7 h-7 rounded-full object-cover"
+                  />
+                  <span className="text-xs font-semibold text-gray-700 px-1 hidden lg:inline">
+                    {currentUser.fullName.split(' ')[0]}
+                  </span>
+                </button>
+
+                {/* Dropdown Menu */}
+                {isProfileOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-150 rounded-2xl shadow-lg py-2.5 z-50 text-left">
+                    <div className="px-4 py-2 border-b border-gray-50 mb-1">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Signed in as</p>
+                      <p className="text-[11px] font-semibold text-gray-700 truncate">{currentUser.email}</p>
+                    </div>
+
+                    {currentUser.role === 'admin' && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <HiOutlineUserCircle className="w-4 h-4 text-purple-500" />
+                        Admin Workspace
+                      </Link>
+                    )}
+
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <HiOutlineUserCircle className="w-4 h-4 text-gray-400" />
+                      My Profile
+                    </Link>
+
+                    <Link
+                      to="/my-bookings"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <HiOutlineCalendar className="w-4 h-4 text-gray-400" />
+                      My Reservations
+                    </Link>
+
+                    <Link
+                      to="/wishlist"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <HiOutlineHeart className="w-4 h-4 text-red-400" />
+                      Wishlist
+                    </Link>
+
+                    <Link
+                      to="/my-payments"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <HiOutlineCreditCard className="w-4 h-4 text-gray-400" />
+                      Payment History
+                    </Link>
+
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-xs font-bold text-red-500 hover:bg-red-50 transition-colors border-none bg-transparent text-left cursor-pointer"
+                    >
+                      <HiOutlineLogout className="w-4 h-4" />
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <ButtonOne onClick={handleLogin} name={"Login"}/>
+                <ButtonOne onClick={handleSignUp} name={"Sign Up"}/>
+              </>
+            )}
           </div>
+
 
           {/* Mobile Menu Button */}
           <div className="md:hidden">
@@ -121,24 +255,57 @@ const Navbar = () => {
 
         {/* Mobile Drawer - Floating capsule layout matching Navbar */}
         {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-16 left-0 right-0 bg-white/95 backdrop-blur-md border border-gray-100 shadow-xl py-5 px-6 rounded-3xl flex flex-col gap-3 animate-fade-in">
+          <div className="md:hidden absolute top-16 left-0 right-0 bg-white/95 backdrop-blur-md border border-gray-100 shadow-xl py-5 px-6 rounded-3xl flex flex-col gap-3 animate-fade-in text-left">
             <NavLink to="/" onClick={() => setIsMobileMenuOpen(false)} className={linkClass}>Home</NavLink>
             <NavLink to="/properties" onClick={() => setIsMobileMenuOpen(false)} className={linkClass}>Find Properties</NavLink>
+            
+            <button
+              onClick={() => {
+                setIsMobileMenuOpen(false)
+                dispatch(toggleCart())
+              }}
+              className="text-xl font-medium text-gray-600 hover:text-[#f0506e] transition-colors py-2 text-left cursor-pointer bg-transparent border-none"
+            >
+              Open Cart ({cartCount})
+            </button>
+
             <button
               onClick={() => {
                 setIsMobileMenuOpen(false)
                 setIsAddModalOpen(true)
               }}
-              className="text-sm font-medium text-gray-600 py-2 text-left cursor-pointer bg-transparent border-none"
+              className="text-xl font-medium text-gray-600 py-2 text-left cursor-pointer bg-transparent border-none"
             >
               Add a Property
             </button>
-            <a href="#how-it-works" onClick={() => setIsMobileMenuOpen(false)} className="text-sm font-medium text-gray-600 py-2">How It Works</a>
+            <a href="#how-it-works" onClick={() => setIsMobileMenuOpen(false)} className="text-xl font-medium text-gray-600 py-2">How It Works</a>
             <div className="h-px bg-gray-100 my-2"></div>
-            <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-600 py-2.5 rounded-lg text-sm font-medium text-center border border-gray-200 bg-white/50">Login</Link>
-            <Link to="/register" onClick={() => setIsMobileMenuOpen(false)} className="btn-brand text-center py-2.5 rounded-full">Sign Up</Link>
+            
+            {isAuthenticated && currentUser ? (
+              <>
+                <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-600 py-2 text-xl font-medium">My Profile</Link>
+                <Link to="/my-bookings" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-600 py-2 text-xl font-medium">My Reservations</Link>
+                <Link to="/wishlist" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-600 py-2 text-xl font-medium">Wishlist</Link>
+                <Link to="/my-payments" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-600 py-2 text-xl font-medium">Payments</Link>
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false)
+                    handleLogout()
+                  }}
+                  className="w-full text-red-500 py-2 text-xl font-medium text-left border-none bg-transparent cursor-pointer"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-600 py-2.5 rounded-lg text-sm font-medium text-center border border-gray-200 bg-white/50">Login</Link>
+                <Link to="/register" onClick={() => setIsMobileMenuOpen(false)} className="btn-brand text-center py-2.5 rounded-full">Sign Up</Link>
+              </>
+            )}
           </div>
         )}
+
       </nav>
 
       {/* Add Property Request Modal Overlay */}

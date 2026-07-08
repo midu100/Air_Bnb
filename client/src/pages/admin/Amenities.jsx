@@ -1,41 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router';
 import { HiOutlinePlus, HiOutlineSparkles, HiOutlinePencil, HiOutlineTrash } from 'react-icons/hi';
 import AdminCommonHead from '../../components/common/adminCommon/AdminCommonHead';
-import { amenityServices } from '../../api';
+import { useGetAmenitiesQuery, useDeleteAmenityMutation } from '../../store/api/amenityApi';
+import { toast } from 'react-hot-toast';
 
 const Amenities = () => {
   const navigate = useNavigate();
-  const [amenities, setAmenities] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useGetAmenitiesQuery();
+  const [deleteAmenity] = useDeleteAmenityMutation();
 
-  const fetchAmenities = async () => {
-    try {
-      const res = await amenityServices.getAll();
-      // Backend returns: res.amenities
-      if (res?.amenities) {
-        setAmenities(res.amenities);
-      }
-    } catch (error) {
-      console.error("Error fetching amenities:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAmenities();
-  }, []);
+  const amenities = data?.amenities || [];
+  const loading = isLoading;
 
   const handleDelete = async (id) => {
     if (confirm('Delete this amenity? This will remove it from all listings.')) {
       try {
-        await amenityServices.delete(id);
-        alert('Amenity deleted successfully.');
-        fetchAmenities();
+        await deleteAmenity(id).unwrap();
+        toast.success('Amenity deleted successfully.');
       } catch (error) {
         console.error(error);
-        alert(error?.response?.data?.message || 'Failed to delete amenity.');
+        toast.error(error?.data?.message || 'Failed to delete amenity.');
       }
     }
   };

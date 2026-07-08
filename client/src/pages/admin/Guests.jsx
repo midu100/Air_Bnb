@@ -1,10 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { HiOutlineUsers, HiOutlineSearch } from 'react-icons/hi';
-import { MOCK_ADMIN_GUESTS } from '../../data/adminMockData';
+import { useGetHostBookingsQuery } from '../../store/api/bookingApi';
 
 const Guests = () => {
-  const [guests] = useState(MOCK_ADMIN_GUESTS);
   const [search, setSearch] = useState('');
+  const { data: bookingsData, isLoading } = useGetHostBookingsQuery();
+
+  const guests = useMemo(() => {
+    const bookings = bookingsData?.bookings || [];
+    const guestsMap = {};
+    bookings.forEach(b => {
+      if (b.guest) {
+        const id = b.guest._id || b.guest.email;
+        if (!guestsMap[id]) {
+          guestsMap[id] = {
+            fullName: b.guest.fullName,
+            email: b.guest.email,
+            phone: b.guest.phoneNumber || 'N/A',
+            totalBookings: 0,
+            joinDate: b.guest.createdAt ? new Date(b.guest.createdAt).toLocaleDateString() : 'N/A'
+          };
+        }
+        guestsMap[id].totalBookings += 1;
+      }
+    });
+    return Object.values(guestsMap);
+  }, [bookingsData]);
 
   const filteredGuests = guests.filter(g => 
     g.fullName.toLowerCase().includes(search.toLowerCase()) ||
@@ -42,18 +63,21 @@ const Guests = () => {
           </h4>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-neutral-50 border-b border-neutral-200 text-neutral-400 font-bold uppercase text-[10px] tracking-wider">
-                <th className="px-6 py-3">Guest Name</th>
-                <th className="px-6 py-3">Email Address</th>
-                <th className="px-6 py-3">Phone Line</th>
-                <th className="px-6 py-3 text-center">Total Bookings</th>
-                <th className="px-6 py-3">Registration Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-200 text-xs font-semibold text-black">
-              {filteredGuests.map((guest, idx) => (
+          {isLoading ? (
+            <div className="py-12 text-center text-sm font-bold text-neutral-400">LOADING GUEST DIRECTORY...</div>
+          ) : (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-neutral-50 border-b border-neutral-200 text-neutral-400 font-bold uppercase text-[10px] tracking-wider">
+                  <th className="px-6 py-3">Guest Name</th>
+                  <th className="px-6 py-3">Email Address</th>
+                  <th className="px-6 py-3">Phone Line</th>
+                  <th className="px-6 py-3 text-center">Total Bookings</th>
+                  <th className="px-6 py-3">Registration Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-200 text-xs font-semibold text-black">
+                {filteredGuests.map((guest, idx) => (
                 <tr key={idx} className="hover:bg-neutral-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
@@ -86,6 +110,7 @@ const Guests = () => {
               )}
             </tbody>
           </table>
+          )}
         </div>
       </div>
     </div>

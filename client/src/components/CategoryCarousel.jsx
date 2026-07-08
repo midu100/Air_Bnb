@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react'
 import CategoryCard from './CategoryCard'
 import CommonHead from './common/CommonHead'
+import { useGetCategoriesQuery } from '../store/api/categoryApi'
 
 const CATEGORIES = [
   {
@@ -66,6 +67,26 @@ const CategoryCarousel = ({ activeCategory, onSelectCategory }) => {
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(true)
 
+  const { data: dbData } = useGetCategoriesQuery()
+  const dbCategories = dbData?.category || []
+
+  // Combine database categories with default mock categories (avoiding duplicates by name)
+  const displayedCategories = [...dbCategories.map(c => ({
+    id: c._id,
+    name: c.name,
+    image: c.image || 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=600&h=450&fit=crop&q=80',
+    count: '',
+    description: c.description || ''
+  }))]
+
+  // Add mock ones that don't match any db name to keep a rich, filled UI
+  CATEGORIES.forEach(mockCat => {
+    const exists = displayedCategories.some(c => c.name.toLowerCase() === mockCat.name.toLowerCase())
+    if (!exists) {
+      displayedCategories.push(mockCat)
+    }
+  })
+
   const checkScroll = () => {
     if (containerRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = containerRef.current
@@ -81,7 +102,7 @@ const CategoryCarousel = ({ activeCategory, onSelectCategory }) => {
       checkScroll()
       return () => el.removeEventListener('scroll', checkScroll)
     }
-  }, [])
+  }, [displayedCategories])
 
   const scroll = (direction) => {
     if (containerRef.current) {
@@ -139,7 +160,7 @@ const CategoryCarousel = ({ activeCategory, onSelectCategory }) => {
           ref={containerRef}
           className="flex gap-4 overflow-x-auto py-1 no-scrollbar scroll-smooth"
         >
-          {CATEGORIES.map((cat) => (
+          {displayedCategories.map((cat) => (
             <CategoryCard
               key={cat.id}
               category={cat}

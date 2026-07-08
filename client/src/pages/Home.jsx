@@ -7,46 +7,38 @@ import HowItWorks from '../components/HowItWorks'
 import Testimonials from '../components/Testimonials'
 import { MOCK_PROPERTIES } from '../data/mockProperties'
 
-import { propertyServices } from '../api'
+import { useGetPropertiesQuery } from '../store/api/propertyApi'
 
 const Home = () => {
-  const [properties, setProperties] = useState([])
-  const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState('hotels') // Default to a matching category from CATEGORIES
+  
+  const { data, isLoading: loading } = useGetPropertiesQuery({ limit: 100 });
+  const properties = data?.properties || [];
 
-  useEffect(() => {
-    const fetchAllProperties = async () => {
-      try {
-        setLoading(true)
-        const res = await propertyServices.getAll({ limit: 100 })
-        if (res?.properties) {
-          setProperties(res.properties)
-        }
-      } catch (error) {
-        console.error("Error loading home properties:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchAllProperties()
-  }, [])
 
-  // Filter properties based on active category name/slug/type
+  // Filter properties based on active category name/slug/type or _id
   const filteredProperties = properties.filter((prop) => {
+    const propCatId = prop.category?._id || prop.category
     const catName = (prop.category?.name || "").toLowerCase()
     const catSlug = (prop.category?.slug || "").toLowerCase()
     const propType = (prop.propertyType || "").toLowerCase()
     const active = activeCategory.toLowerCase()
 
-    return catName.includes(active) || catSlug.includes(active) || propType.includes(active)
+    return (
+      propCatId === activeCategory ||
+      catName.includes(active) ||
+      catSlug.includes(active) ||
+      propType.includes(active)
+    )
   })
 
   // Get other popular properties for a secondary carousel
   const otherPopularProperties = properties.filter((prop) => {
+    const propCatId = prop.category?._id || prop.category
     const catName = (prop.category?.name || "").toLowerCase()
     const catSlug = (prop.category?.slug || "").toLowerCase()
     const active = activeCategory.toLowerCase()
-    const isMatched = catName.includes(active) || catSlug.includes(active)
+    const isMatched = propCatId === activeCategory || catName.includes(active) || catSlug.includes(active)
 
     return !isMatched && (prop.isFeatured || prop.averageRating >= 4.5)
   })

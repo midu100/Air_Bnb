@@ -1,15 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import AdminCommonHead from '../../components/common/adminCommon/AdminCommonHead';
 import PropertyForm from '../../components/admin/PropertyForm';
-
-import { useState } from 'react';
-import { toast } from 'react-toastify';
-import { propertyServices } from '../../api';
+import { toast } from 'react-hot-toast';
+import { useCreatePropertyMutation } from '../../store/api/propertyApi';
 
 const AddProperty = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [createProperty, { isLoading }] = useCreatePropertyMutation();
 
   const handleSubmit = async (data) => {
     if (!data.thumbnailFile) {
@@ -17,7 +15,6 @@ const AddProperty = () => {
       return;
     }
 
-    setLoading(true);
     try {
       const fd = new FormData();
       fd.append('title', data.title);
@@ -47,17 +44,15 @@ const AddProperty = () => {
         }
       }
 
-      await propertyServices.create(fd);
+      await createProperty(fd).unwrap();
       toast.success("Listing created successfully!");
       setTimeout(() => {
         navigate('/admin/properties');
       }, 1500);
     } catch (error) {
       console.error(error);
-      const msg = error?.response?.data?.message || "Failed to publish property listing.";
+      const msg = error?.data?.message || "Failed to publish property listing.";
       toast.error(msg);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -79,7 +74,7 @@ const AddProperty = () => {
 
       {/* Form Container */}
       <div className="bg-white border border-neutral-200 rounded p-8 shadow-xs">
-        <PropertyForm onSubmit={handleSubmit} buttonText={loading ? "Publishing..." : "Publish Property Listing"} />
+        <PropertyForm onSubmit={handleSubmit} buttonText={isLoading ? "Publishing..." : "Publish Property Listing"} />
       </div>
     </div>
   );

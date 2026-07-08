@@ -1,5 +1,6 @@
 const express = require('express')
 const { createServer } = require("http")
+const cors = require('cors')
 const cookieParser = require('cookie-parser')
 require('dotenv').config()
 const dbConfig = require('./dbConfig')
@@ -35,6 +36,11 @@ io.on("connection", (socket) => {
   })
 });
 
+// CORS middleware — allows browser to send cross-origin requests from frontend
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser())

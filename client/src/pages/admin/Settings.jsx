@@ -1,13 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HiOutlineUser, HiOutlineKey, HiOutlineBell } from 'react-icons/hi';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '../../store/slices/authSlice';
+import { toast } from 'react-hot-toast';
 
 const Settings = () => {
+  const currentUser = useSelector(selectCurrentUser);
   const [profile, setProfile] = useState({
-    fullName: 'Julietta Swan',
-    email: 'Julietta@example.com',
-    phone: '+1 (555) 019-2834',
-    role: 'Super Admin'
+    fullName: '',
+    email: '',
+    phone: '',
+    role: 'Host / Admin'
   });
+
+  useEffect(() => {
+    if (currentUser) {
+      setProfile({
+        fullName: currentUser.fullName || '',
+        email: currentUser.email || '',
+        phone: currentUser.phoneNumber || '',
+        role: currentUser.role || 'Host / Admin'
+      });
+    }
+  }, [currentUser]);
 
   const [password, setPassword] = useState({
     current: '',
@@ -17,16 +32,16 @@ const Settings = () => {
 
   const handleProfileSubmit = (e) => {
     e.preventDefault();
-    alert('Success: Profile configuration updated successfully!');
+    toast.success('Profile configuration updated successfully!');
   };
 
   const handlePasswordSubmit = (e) => {
     e.preventDefault();
     if (password.newPass !== password.confirm) {
-      alert('Error: Confirm password does not match new password');
+      toast.error('Confirm password does not match new password');
       return;
     }
-    alert('Success: Authentication credentials updated successfully!');
+    toast.success('Authentication credentials updated successfully!');
     setPassword({ current: '', newPass: '', confirm: '' });
   };
 

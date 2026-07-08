@@ -1,51 +1,45 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { HiOutlineSearch } from 'react-icons/hi';
 import RecentBookingsTable from '../../components/admin/RecentBookingsTable';
-import { bookingServices } from '../../api';
+import { 
+  useGetHostBookingsQuery, 
+  useGetMyBookingsQuery,
+  useConfirmBookingMutation,
+  useCompleteBookingMutation,
+  useCancelBookingMutation 
+} from '../../store/api/bookingApi';
+import toast from 'react-hot-toast';
 
 const Bookings = () => {
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
-  const fetchBookings = async () => {
-    try {
-      setLoading(true);
-      let res;
-      try {
-        res = await bookingServices.getHostBookings();
-      } catch (err) {
-        res = await bookingServices.getMyBookings();
-      }
-      if (res?.bookings) {
-        setBookings(res.bookings);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Fetch using RTK Query
+  const { data: hostBookData, isLoading: hostLoading } = useGetHostBookingsQuery();
+  const { data: fallbackBookData, isLoading: fallbackLoading } = useGetMyBookingsQuery(undefined, {
+    skip: !!hostBookData?.bookings?.length
+  });
 
-  useEffect(() => {
-    fetchBookings();
-  }, []);
+  const [confirmBooking] = useConfirmBookingMutation();
+  const [completeBooking] = useCompleteBookingMutation();
+  const [cancelBooking] = useCancelBookingMutation();
+
+  const bookings = hostBookData?.bookings?.length ? hostBookData.bookings : (fallbackBookData?.bookings || []);
+  const loading = hostBookData?.bookings?.length ? hostLoading : (hostLoading || fallbackLoading);
 
   const handleBookingAction = async (bookingId, action) => {
     try {
       if (action === 'confirm') {
-        await bookingServices.confirm(bookingId);
+        await confirmBooking(bookingId).unwrap();
       } else if (action === 'complete') {
-        await bookingServices.complete(bookingId);
+        await completeBooking(bookingId).unwrap();
       } else if (action === 'cancel') {
-        await bookingServices.cancel(bookingId);
+        await cancelBooking(bookingId).unwrap();
       }
-      alert(`Reservation status updated successfully! Action: ${action}`);
-      fetchBookings();
+      toast.success(`Reservation status updated successfully! Action: ${action}`);
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.message || 'Failed to update reservation status.');
+      toast.error(error?.data?.message || 'Failed to update reservation status.');
     }
   };
 

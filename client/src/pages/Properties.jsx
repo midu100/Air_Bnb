@@ -1,12 +1,14 @@
-import { propertyServices } from '../api'
+import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router'
+import { useGetPropertiesQuery } from '../store/api/propertyApi'
+import { useGetCategoriesQuery } from '../store/api/categoryApi'
+import PropertyCard from '../components/PropertyCard'
 
 const Properties = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const destParam = searchParams.get('destination') || ''
   const guestParam = searchParams.get('guests') || '1'
 
-  const [properties, setProperties] = useState([])
-  const [loading, setLoading] = useState(true)
   const [destination, setDestination] = useState(destParam)
   const [guests, setGuests] = useState(guestParam)
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -18,22 +20,12 @@ const Properties = () => {
     setGuests(guestParam)
   }, [destParam, guestParam])
 
-  useEffect(() => {
-    const fetchProperties = async () => {
-      try {
-        setLoading(true)
-        const res = await propertyServices.getAll({ limit: 100 })
-        if (res?.properties) {
-          setProperties(res.properties)
-        }
-      } catch (error) {
-        console.error("Error fetching properties:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchProperties()
-  }, [])
+  const { data, isLoading: loading } = useGetPropertiesQuery({ limit: 100 })
+  const properties = data?.properties || []
+
+  const { data: catData } = useGetCategoriesQuery()
+  const categoriesList = catData?.category || []
+
 
   // Filter properties
   const filteredProperties = properties.filter((prop) => {
@@ -146,13 +138,14 @@ const Properties = () => {
                 className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-850 focus:outline-none focus:border-brand transition-colors cursor-pointer"
               >
                 <option value="all">All Categories</option>
-                {CATEGORIES.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
+                {categoriesList.map((cat) => (
+                  <option key={cat._id} value={cat._id}>
                     {cat.name}
                   </option>
                 ))}
               </select>
             </div>
+
 
             {/* Price Filter */}
             <div className="space-y-2">

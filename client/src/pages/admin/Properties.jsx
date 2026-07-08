@@ -1,44 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { HiOutlinePlus, HiOutlineSearch } from 'react-icons/hi';
 import AdminPropertyCard from '../../components/admin/AdminPropertyCard';
 import AdminCommonHead from '../../components/common/adminCommon/AdminCommonHead';
-import { propertyServices } from '../../api';
+import { useGetHostPropertiesQuery, useGetPropertiesQuery, useDeletePropertyMutation } from '../../store/api/propertyApi';
+import toast from 'react-hot-toast';
 
 const Properties = () => {
   const navigate = useNavigate();
-  const [properties, setProperties] = useState([]);
-  const [loading, setLoading] = useState(true);
   
   // Filters
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
 
-  const fetchProperties = async () => {
-    try {
-      setLoading(true);
-      // Try host properties first
-      let res;
-      try {
-        res = await propertyServices.getHostProperties();
-      } catch (hostErr) {
-        // Fall back to all properties
-        res = await propertyServices.getAll({ limit: 100 });
-      }
-      if (res?.properties) {
-        setProperties(res.properties);
-      }
-    } catch (error) {
-      console.error("Error fetching properties:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Fetch using RTK Query
+  const { data: hostPropData, isLoading: hostPropLoading } = useGetHostPropertiesQuery();
+  const { data: fallbackPropData, isLoading: fallbackPropLoading } = useGetPropertiesQuery({ limit: 100 }, { skip: !!hostPropData?.properties?.length });
+  const [deleteProperty] = useDeletePropertyMutation();
 
-  useEffect(() => {
-    fetchProperties();
-  }, []);
+  const properties = hostPropData?.properties?.length ? hostPropData.properties : (fallbackPropData?.properties || []);
+  const loading = hostPropData?.properties?.length ? hostPropLoading : (hostPropLoading || fallbackPropLoading);
 
   const handleEditClick = (property) => {
     const id = property._id || property.id;
@@ -48,12 +30,11 @@ const Properties = () => {
   const handleDelete = async (propertyId) => {
     if (confirm('Are you sure you want to delete this property from inventory?')) {
       try {
-        await propertyServices.delete(propertyId);
-        alert('Property deleted successfully.');
-        fetchProperties();
+        await deleteProperty(propertyId).unwrap();
+        toast.success('Property deleted successfully.');
       } catch (error) {
         console.error(error);
-        alert(error?.response?.data?.message || 'Failed to delete property.');
+        toast.error(error?.data?.message || 'Failed to delete property.');
       }
     }
   };

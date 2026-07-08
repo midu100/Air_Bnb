@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import AdminCommonHead from '../../components/common/adminCommon/AdminCommonHead';
-import { amenityServices } from '../../api';
+import { useGetAmenitiesQuery, useUpdateAmenityMutation } from '../../store/api/amenityApi';
+import { toast } from 'react-hot-toast';
 
 const EditAmenity = () => {
   const { id } = useParams();
@@ -10,27 +11,21 @@ const EditAmenity = () => {
     name: '',
     icon: ''
   });
-  const [loading, setLoading] = useState(false);
+
+  const { data: amenitiesData, isLoading: fetchLoading } = useGetAmenitiesQuery();
+  const [updateAmenity, { isLoading: loading }] = useUpdateAmenityMutation();
 
   useEffect(() => {
-    const fetchAmenity = async () => {
-      try {
-        const res = await amenityServices.getAll();
-        const found = res?.amenities?.find(a => a._id === id);
-        if (found) {
-          setFormData({ name: found.name || '', icon: found.icon || '' });
-        } else {
-          alert('Error: Amenity not found');
-          navigate('/admin/amenities');
-        }
-      } catch (error) {
-        console.error(error);
-        alert('Failed to load amenity detail.');
+    if (amenitiesData?.amenities) {
+      const found = amenitiesData.amenities.find(a => a._id === id);
+      if (found) {
+        setFormData({ name: found.name || '', icon: found.icon || '' });
+      } else {
+        toast.error('Error: Amenity not found');
         navigate('/admin/amenities');
       }
-    };
-    fetchAmenity();
-  }, [id, navigate]);
+    }
+  }, [amenitiesData, id, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,16 +34,13 @@ const EditAmenity = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     try {
-      await amenityServices.update(id, formData);
-      alert(`Success: Amenity "${formData.name}" has been updated!`);
+      await updateAmenity({ id, amenityData: formData }).unwrap();
+      toast.success(`Success: Amenity "${formData.name}" has been updated!`);
       navigate('/admin/amenities');
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.message || 'Failed to update amenity.');
-    } finally {
-      setLoading(false);
+      toast.error(error?.data?.message || 'Failed to update amenity.');
     }
   };
 

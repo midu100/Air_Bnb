@@ -1,7 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { useParams, Link } from 'react-router'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
+import { useParams, Link, useNavigate } from 'react-router'
+import { useDispatch, useSelector } from 'react-redux'
 import { MOCK_PROPERTIES } from '../data/mockProperties'
 import ThreeSixtyViewer from '../components/ThreeSixtyViewer'
+import { useGetPropertyByIdQuery } from '../store/api/propertyApi'
+import { useGetAvailabilityQuery } from '../store/api/bookingApi'
+import { addToCart } from '../store/slices/cartSlice'
+import { selectIsAuthenticated } from '../store/slices/authSlice'
+import toast from 'react-hot-toast'
 
 const FloorPlanSVG = () => (
   <svg viewBox="0 0 800 500" className="w-full h-full text-gray-600 bg-gray-50 rounded-2xl md:rounded-3xl p-6 sm:p-8" fill="none" stroke="currentColor" strokeWidth="2">
@@ -82,7 +88,66 @@ const MockMap = ({ location }) => (
 
 const PropertyDetails = () => {
   const { id } = useParams()
-  const property = MOCK_PROPERTIES.find((p) => p.id === parseInt(id, 10))
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const isAuthenticated = useSelector(selectIsAuthenticated)
+
+  // Fetch property from API
+  const { data: apiData, isLoading, error } = useGetPropertyByIdQuery(id)
+  const apiProperty = apiData?.property || null
+
+  // Also try mock data as fallback (for demo/dev purposes)
+  const mockProperty = MOCK_PROPERTIES.find((p) => p.id === parseInt(id, 10))
+
+  // Merge: API data takes priority, mock data as fallback for fields not in DB
+  const property = apiProperty ? {
+    ...mockProperty,
+    ...apiProperty,
+    // Map backend fields to the field names used in this component
+    id: apiProperty._id || id,
+    price: apiProperty.pricePerNight || mockProperty?.price || 0,
+    beds: apiProperty.bedrooms || apiProperty.beds || mockProperty?.beds || 2,
+    baths: apiProperty.bathrooms || mockProperty?.baths || 1,
+    image: apiProperty.thumbnail || mockProperty?.image,
+    location: apiProperty.city && apiProperty.country ? `${apiProperty.city}, ${apiProperty.country}` : (mockProperty?.location || ''),
+    ownerName: apiProperty.host?.fullName || mockProperty?.ownerName || 'Host',
+    ownerAvatar: apiProperty.host?.profileImg ? '🏠' : (mockProperty?.ownerAvatar || '🏠'),
+    unavailableDates: [], // Will be computed from availability API
+    propertyId: apiProperty._id || mockProperty?.propertyId || id,
+    serviceCharge: apiProperty.serviceFee || mockProperty?.serviceCharge || 0,
+    isGuestFavorite: apiProperty.isFeatured || mockProperty?.isGuestFavorite || false,
+  } : mockProperty
+
+  // Fetch real booking availability to compute unavailable dates
+  const { data: availData } = useGetAvailabilityQuery(id, { skip: !apiProperty })
+
+  // Compute unavailable date strings from availability API data
+  const unavailableDates = useMemo(() => {
+    if (!availData?.data) return property?.unavailableDates || []
+    const dates = []
+    for (const booking of availData.data) {
+      let current = new Date(booking.checkInDate)
+      const end = new Date(booking.checkOutDate)
+      while (current < end) {
+        dates.push(current.toISOString().split('T')[0])
+        current.setDate(current.getDate() + 1)
+      }
+    }
+    return dates
+  }, [availData, property?.unavailableDates])
+
+  // Override property.unavailableDates with computed values
+  if (property) {
+    property.unavailableDates = unavailableDates
+  }
+
+  if (isLoading) {
+    return (
+      <div className="pt-32 pb-24 text-center font-sans">
+        <div className="animate-pulse text-gray-400 font-bold text-sm">Loading property details...</div>
+      </div>
+    )
+  }
 
   if (!property) {
     return (
@@ -170,7 +235,41 @@ const PropertyDetails = () => {
     }
 
     setIsError(false)
-    setBookingMessage('Booking request pending! Auto-expiration timer started (10 minutes). Double booking prevention lock activated.')
+    setBookingMessage(null)
+  }
+
+  const handleAddToCart = () => {
+    if (!checkInDate || !checkOutDate) {
+      setIsError(true)
+      setBookingMessage('Please select check-in and check-out dates on the calendar.')
+      return
+    }
+
+    const checkIn = new Date(checkInDate)
+    const checkOut = new Date(checkOutDate)
+    const totalNights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24))
+    const pricePerNight = property.pricePerNight || property.price || 0
+    const cleaningFee = property.cleaningFee || 0
+    const serviceFee = property.serviceFee || property.serviceCharge || 0
+    const totalAmount = (pricePerNight * totalNights) + cleaningFee + serviceFee
+
+    dispatch(addToCart({
+      property: {
+        _id: property._id || property.id,
+        title: property.title,
+        thumbnail: property.thumbnail || property.image,
+        city: property.city || '',
+        country: property.country || '',
+        pricePerNight,
+      },
+      checkInDate,
+      checkOutDate,
+      guestsCount: property.maxGuests || 2,
+      totalNights,
+      totalAmount,
+    }))
+
+    toast.success('Added to cart! Open cart to checkout.', { position: 'top-center' })
   }
 
   const isSelected = (day) => {
@@ -736,12 +835,20 @@ const PropertyDetails = () => {
                   </div>
                 )}
 
-                <button
-                  onClick={handleBook}
-                  className="w-full bg-rose-500 hover:bg-rose-600 active:scale-[0.99] text-white rounded-2xl py-3.5 text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-rose-500/10 cursor-pointer"
-                >
-                  Request Booking Date Lock
-                </button>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={handleAddToCart}
+                    className="w-full bg-gray-900 hover:bg-gray-800 active:scale-[0.99] text-white rounded-2xl py-3.5 text-xs font-bold uppercase tracking-wider transition-all shadow-md cursor-pointer"
+                  >
+                    Add to Cart
+                  </button>
+                  <button
+                    onClick={handleBook}
+                    className="w-full bg-rose-500 hover:bg-rose-600 active:scale-[0.99] text-white rounded-2xl py-3.5 text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-rose-500/10 cursor-pointer"
+                  >
+                    Book Now
+                  </button>
+                </div>
               </div>
 
             </div>

@@ -7,11 +7,11 @@ const route = express.Router();
 route.post('/create',authMiddleware,createBooking)
 route.get('/availability/:propertyId', getPropertyAvailability)
 route.get('/mybookings',authMiddleware,getMyBookings)
-route.get('/hostbookings',authMiddleware,roleCheckMiddleware('host'),getHostBookings)
+route.get('/hostbookings',authMiddleware,roleCheckMiddleware(['host','admin']),getHostBookings)
 route.get('/:id',authMiddleware,getBookingById)
 route.put('/cancel/:id',authMiddleware,cancelBooking)
-route.put('/confirm/:id',authMiddleware,roleCheckMiddleware('host'),confirmBooking)
-route.put('/complete/:id',authMiddleware,roleCheckMiddleware('host'),completeBooking)
+route.put('/confirm/:id',authMiddleware,roleCheckMiddleware(['host','admin']),confirmBooking)
+route.put('/complete/:id',authMiddleware,roleCheckMiddleware(['host','admin']),completeBooking)
 
 
 module.exports = route;

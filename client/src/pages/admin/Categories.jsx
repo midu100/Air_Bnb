@@ -1,30 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router';
 import { HiOutlinePlus } from 'react-icons/hi';
 import AdminCommonHead from '../../components/common/adminCommon/AdminCommonHead';
-import { categoryServices } from '../../api';
+import { useGetCategoriesQuery } from '../../store/api/categoryApi';
 
 const Categories = () => {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await categoryServices.getAll();
-        // Backend returns: res.category
-        if (res?.category) {
-          setCategories(res.category);
-        }
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCategories();
-  }, []);
+  const { data, isLoading } = useGetCategoriesQuery();
+  const categories = data?.category || [];
+  const loading = isLoading;
 
   return (
     <div className="space-y-6 text-xs text-black">

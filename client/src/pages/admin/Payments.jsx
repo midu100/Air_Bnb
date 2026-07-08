@@ -1,18 +1,30 @@
 import React, { useState } from 'react';
 import { HiOutlineCreditCard, HiOutlineSearch } from 'react-icons/hi';
 import { MOCK_ADMIN_PAYMENTS } from '../../data/adminMockData';
+import { useGetMyPaymentsQuery, useRefundPaymentMutation } from '../../store/api/paymentApi';
+import { toast } from 'react-hot-toast';
 
 const Payments = () => {
-  const [payments, setPayments] = useState(MOCK_ADMIN_PAYMENTS);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
-  const handleRefund = (id) => {
+  // Fetch payments via RTK Query
+  const { data: apiPaymentsData, isLoading } = useGetMyPaymentsQuery();
+  const [refundPayment] = useRefundPaymentMutation();
+
+  const apiPayments = apiPaymentsData?.payments || [];
+  // Merge or fallback to mock payments if database is empty
+  const payments = apiPayments.length > 0 ? apiPayments : MOCK_ADMIN_PAYMENTS;
+
+  const handleRefund = async (id) => {
     if (confirm('Process refund? This will cancel the reservation and send credits back.')) {
-      setPayments(prev => 
-        prev.map(p => p._id === id ? { ...p, status: 'refunded' } : p)
-      );
-      alert('Payment refunded successfully!');
+      try {
+        await refundPayment(id).unwrap();
+        toast.success('Payment refunded successfully!');
+      } catch (error) {
+        console.error(error);
+        toast.error(error?.data?.message || 'Failed to refund payment.');
+      }
     }
   };
 
@@ -30,9 +42,11 @@ const Payments = () => {
   };
 
   const filteredPayments = payments.filter(p => {
+    const txnId = p.transactionId || p._id || '';
+    const userFullName = p.user?.fullName || '';
     const matchesSearch = 
-      p.transactionId.toLowerCase().includes(search.toLowerCase()) ||
-      p.user?.fullName.toLowerCase().includes(search.toLowerCase());
+      txnId.toLowerCase().includes(search.toLowerCase()) ||
+      userFullName.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === 'All' || p.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -84,20 +98,23 @@ const Payments = () => {
           </h4>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-neutral-50 border-b border-neutral-200 text-neutral-400 font-bold uppercase text-[10px] tracking-wider">
-                <th className="px-6 py-3">Transaction ID</th>
-                <th className="px-6 py-3">Customer</th>
-                <th className="px-6 py-3">Method</th>
-                <th className="px-6 py-3 text-right">Amount</th>
-                <th className="px-6 py-3 text-center">Status</th>
-                <th className="px-6 py-3">Logged Date</th>
-                <th className="px-6 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-200 text-xs font-semibold text-black">
-              {filteredPayments.map(payment => (
+          {isLoading ? (
+            <div className="py-12 text-center text-sm font-bold text-neutral-400">LOADING TRANSACTIONS...</div>
+          ) : (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-neutral-50 border-b border-neutral-200 text-neutral-400 font-bold uppercase text-[10px] tracking-wider">
+                  <th className="px-6 py-3">Transaction ID</th>
+                  <th className="px-6 py-3">Customer</th>
+                  <th className="px-6 py-3">Method</th>
+                  <th className="px-6 py-3 text-right">Amount</th>
+                  <th className="px-6 py-3 text-center">Status</th>
+                  <th className="px-6 py-3">Logged Date</th>
+                  <th className="px-6 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-200 text-xs font-semibold text-black">
+                {filteredPayments.map(payment => (
                 <tr key={payment._id} className="hover:bg-neutral-50 transition-colors">
                   <td className="px-6 py-4 font-mono font-bold text-neutral-500">
                     {payment.transactionId}
@@ -143,6 +160,7 @@ const Payments = () => {
               )}
             </tbody>
           </table>
+          )}
         </div>
       </div>
     </div>

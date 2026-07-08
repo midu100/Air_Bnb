@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router";
 import toast, { Toaster } from "react-hot-toast";
 import AuthImageSlider from "../components/common/AuthImageSlider";
 import ButtonTwo from "../components/common/ButtonTwo";
-import { authServices } from "../api";
+import { useVerifyOtpMutation } from "../store/api/authApi";
 
 const slides = [
   {
@@ -21,6 +21,8 @@ const VerifyOtp = () => {
   const [email, setEmail] = useState(defaultEmail);
   const [otp, setOtp] = useState("");
   const [errors, setErrors] = useState("");
+  
+  const [verifyOtp, { isLoading }] = useVerifyOtpMutation();
 
   const handleVerify = async (e) => {
     e.preventDefault();
@@ -33,7 +35,7 @@ const VerifyOtp = () => {
     }
 
     try {
-      const res = await authServices.verifyOtp({ email, otp });
+      const res = await verifyOtp({ email, otp }).unwrap();
       toast.success(res.message || "Email verified successfully!", {
         duration: 3000,
         position: "top-center",
@@ -43,7 +45,7 @@ const VerifyOtp = () => {
         navigate("/login");
       }, 1500);
     } catch (error) {
-      const errorMsg = error?.response?.data?.message || "Invalid OTP code or expired.";
+      const errorMsg = error?.data?.message || "Invalid OTP code or expired.";
       setErrors(errorMsg);
       toast.error(errorMsg, {
         duration: 3000,
@@ -51,6 +53,7 @@ const VerifyOtp = () => {
       });
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">

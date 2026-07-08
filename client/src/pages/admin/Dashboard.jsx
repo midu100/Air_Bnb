@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { 
   HiOutlineCreditCard, 
   HiOutlineCalendar, 
@@ -13,7 +13,8 @@ import RevenueChart from '../../components/admin/RevenueChart';
 import BookingsChart from '../../components/admin/BookingsChart';
 import RecentBookingsTable from '../../components/admin/RecentBookingsTable';
 import AdminCommonHead from '../../components/common/adminCommon/AdminCommonHead';
-import { propertyServices, bookingServices } from '../../api';
+import { useGetHostPropertiesQuery, useGetPropertiesQuery } from '../../store/api/propertyApi';
+import { useGetHostBookingsQuery } from '../../store/api/bookingApi';
 
 import { 
   REVENUE_CHART_DATA, 
@@ -22,66 +23,38 @@ import {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState({
-    totalRevenue: 0,
-    totalBookings: 0,
-    activeListings: 0,
-    averageRating: 0.0
-  });
-  const [recentBookings, setRecentBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        setLoading(true);
-        let propertiesList = [];
-        try {
-          const propRes = await propertyServices.getHostProperties();
-          propertiesList = propRes?.properties || [];
-        } catch (propErr) {
-          const propRes = await propertyServices.getAll({ limit: 100 });
-          propertiesList = propRes?.properties || [];
-        }
+  // Fetch data via RTK Query — automatic caching & re-fetching
+  const { data: hostPropData, isLoading: propLoading } = useGetHostPropertiesQuery();
+  const { data: fallbackPropData } = useGetPropertiesQuery({ limit: 100 }, { skip: !!hostPropData?.properties?.length });
+  const { data: bookData, isLoading: bookLoading } = useGetHostBookingsQuery();
 
-        let bookingsList = [];
-        try {
-          const bookRes = await bookingServices.getHostBookings();
-          bookingsList = bookRes?.bookings || [];
-        } catch (bookErr) {
-          const bookRes = await bookingServices.getMyBookings();
-          bookingsList = bookRes?.bookings || [];
-        }
+  const propertiesList = hostPropData?.properties?.length ? hostPropData.properties : (fallbackPropData?.properties || []);
+  const bookingsList = bookData?.bookings || [];
+  const loading = propLoading || bookLoading;
 
-        // Sum revenue
-        const revenue = bookingsList.reduce((sum, b) => {
-          if (b.bookingStatus !== 'cancelled') {
-            return sum + (b.totalAmount || 0);
-          }
-          return sum;
-        }, 0);
-
-        // Average rating
-        const ratedProperties = propertiesList.filter(p => p.averageRating !== undefined);
-        const avgRating = ratedProperties.length > 0
-          ? Number((ratedProperties.reduce((sum, p) => sum + (p.averageRating || p.rating || 0), 0) / ratedProperties.length).toFixed(2))
-          : 0.0;
-
-        setStats({
-          totalRevenue: revenue,
-          totalBookings: bookingsList.length,
-          activeListings: propertiesList.length,
-          averageRating: avgRating
-        });
-        setRecentBookings(bookingsList.slice(0, 5));
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+  const stats = useMemo(() => {
+    const revenue = bookingsList.reduce((sum, b) => {
+      if (b.bookingStatus !== 'cancelled') {
+        return sum + (b.totalAmount || 0);
       }
+      return sum;
+    }, 0);
+
+    const ratedProperties = propertiesList.filter(p => p.averageRating !== undefined);
+    const avgRating = ratedProperties.length > 0
+      ? Number((ratedProperties.reduce((sum, p) => sum + (p.averageRating || p.rating || 0), 0) / ratedProperties.length).toFixed(2))
+      : 0.0;
+
+    return {
+      totalRevenue: revenue,
+      totalBookings: bookingsList.length,
+      activeListings: propertiesList.length,
+      averageRating: avgRating
     };
-    loadDashboardData();
-  }, []);
+  }, [propertiesList, bookingsList]);
+
+  const recentBookings = bookingsList.slice(0, 5);
 
   return (
     <div className="space-y-8">

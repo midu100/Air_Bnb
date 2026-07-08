@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import AdminCommonHead from '../../components/common/adminCommon/AdminCommonHead';
-import { amenityServices } from '../../api';
+import { useCreateAmenityMutation } from '../../store/api/amenityApi';
+import { toast } from 'react-hot-toast';
 
 const AddAmenity = () => {
   const navigate = useNavigate();
@@ -9,7 +10,7 @@ const AddAmenity = () => {
     name: '',
     icon: ''
   });
-  const [loading, setLoading] = useState(false);
+  const [createAmenity, { isLoading: loading }] = useCreateAmenityMutation();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -18,16 +19,13 @@ const AddAmenity = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     try {
-      await amenityServices.create(formData);
-      alert(`Success: Amenity "${formData.name}" has been created!`);
+      await createAmenity(formData).unwrap();
+      toast.success(`Success: Amenity "${formData.name}" has been created!`);
       navigate('/admin/amenities');
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.message || 'Failed to create amenity.');
-    } finally {
-      setLoading(false);
+      toast.error(error?.data?.message || 'Failed to create amenity.');
     }
   };
 

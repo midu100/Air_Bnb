@@ -1,5 +1,7 @@
 import React from 'react';
-import { NavLink } from 'react-router';
+import { NavLink, useNavigate } from 'react-router';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectCurrentUser, logout } from '../../store/slices/authSlice';
 import { 
   HiOutlineViewGrid, 
   HiOutlineHome, 
@@ -17,6 +19,10 @@ import {
 } from 'react-icons/hi';
 
 const Sidebar = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const currentUser = useSelector(selectCurrentUser);
+
   const menuItems = [
     { name: 'Dashboard', path: '/admin', icon: HiOutlineViewGrid, end: true },
     { name: 'Properties', path: '/admin/properties', icon: HiOutlineHome },
@@ -32,6 +38,22 @@ const Sidebar = () => {
     { name: 'User Directory', path: '/admin/guests', icon: HiOutlineUsers },
     { name: 'Workspace Settings', path: '/admin/settings', icon: HiOutlineCog },
   ];
+
+  const handleLogout = () => {
+    document.cookie = "X_AS-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    dispatch(logout());
+    navigate('/login');
+  };
+
+  // Extract initials for the avatar if profile image is not present
+  const getInitials = () => {
+    if (!currentUser?.fullName) return 'AD';
+    const names = currentUser.fullName.split(' ');
+    if (names.length >= 2) {
+      return (names[0][0] + names[1][0]).toUpperCase();
+    }
+    return currentUser.fullName[0].toUpperCase();
+  };
 
   return (
     <div className="w-64 bg-black text-white h-screen flex flex-col justify-between border-r border-neutral-900 sticky top-0">
@@ -51,12 +73,24 @@ const Sidebar = () => {
 
         {/* Profile Info */}
         <div className="px-6 py-4 border-b border-neutral-900 flex items-center gap-3 shrink-0">
-          <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center font-bold text-white text-sm border border-neutral-700 uppercase">
-            JD
-          </div>
+          {currentUser?.profileImg ? (
+            <img 
+              src={currentUser.profileImg} 
+              alt={currentUser.fullName} 
+              className="w-10 h-10 rounded-full object-cover border border-neutral-700"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center font-bold text-white text-sm border border-neutral-700 uppercase">
+              {getInitials()}
+            </div>
+          )}
           <div className="flex flex-col">
-            <span className="text-xs font-extrabold leading-none">Julietta Swan</span>
-            <span className="text-[10px] text-neutral-500 mt-1 leading-none font-bold uppercase tracking-wider">Super Admin</span>
+            <span className="text-xs font-extrabold leading-none text-white truncate max-w-[150px]">
+              {currentUser?.fullName || 'Guest Admin'}
+            </span>
+            <span className="text-[10px] text-neutral-500 mt-1 leading-none font-bold uppercase tracking-wider">
+              {currentUser?.role || 'Admin'}
+            </span>
           </div>
         </div>
 
@@ -87,7 +121,10 @@ const Sidebar = () => {
 
       {/* Logout button at bottom */}
       <div className="p-4 border-t border-neutral-900 shrink-0">
-        <button className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-white hover:bg-neutral-950 rounded transition-all cursor-pointer">
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-white hover:bg-neutral-950 rounded transition-all cursor-pointer"
+        >
           <HiOutlineLogout className="w-4 h-4" />
           <span>Logout</span>
         </button>

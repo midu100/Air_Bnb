@@ -1,37 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate, useParams } from 'react-router';
 import AdminCommonHead from '../../components/common/adminCommon/AdminCommonHead';
 import PropertyForm from '../../components/admin/PropertyForm';
-import { toast } from 'react-toastify';
-import { propertyServices } from '../../api';
+import { toast } from 'react-hot-toast';
+import { useGetPropertyByIdQuery, useUpdatePropertyMutation } from '../../store/api/propertyApi';
 
 const EditProperty = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [property, setProperty] = useState(null);
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchProperty = async () => {
-      try {
-        const res = await propertyServices.getById(id);
-        if (res?.property) {
-          setProperty(res.property);
-        } else {
-          toast.error("Property not found");
-          navigate('/admin/properties');
-        }
-      } catch (error) {
-        console.error(error);
-        toast.error("Failed to load property details.");
-        navigate('/admin/properties');
-      }
-    };
-    fetchProperty();
-  }, [id, navigate]);
+  // Fetch using RTK Query
+  const { data: propertyData, isLoading: fetchLoading } = useGetPropertyByIdQuery(id);
+  const [updateProperty, { isLoading: updateLoading }] = useUpdatePropertyMutation();
+  const property = propertyData?.property;
 
   const handleSubmit = async (data) => {
-    setLoading(true);
     try {
       const fd = new FormData();
       fd.append('title', data.title);
@@ -63,24 +46,30 @@ const EditProperty = () => {
         }
       }
 
-      await propertyServices.update(id, fd);
+      await updateProperty({ id, formData: fd }).unwrap();
       toast.success("Listing updated successfully!");
       setTimeout(() => {
         navigate('/admin/properties');
       }, 1500);
     } catch (error) {
       console.error(error);
-      const msg = error?.response?.data?.message || "Failed to update property listing.";
+      const msg = error?.data?.message || "Failed to update property listing.";
       toast.error(msg);
-    } finally {
-      setLoading(false);
     }
   };
+
+  if (fetchLoading) {
+    return (
+      <div className="py-12 text-center text-neutral-400 font-bold">
+        Loading property details...
+      </div>
+    );
+  }
 
   if (!property) {
     return (
       <div className="py-12 text-center text-neutral-400 font-bold">
-        Loading property details...
+        Property not found.
       </div>
     );
   }
@@ -106,7 +95,7 @@ const EditProperty = () => {
         <PropertyForm 
           initialData={property} 
           onSubmit={handleSubmit} 
-          buttonText={loading ? "Saving Details..." : "Save Property Details"} 
+          buttonText={updateLoading ? "Saving Details..." : "Save Property Details"} 
         />
       </div>
     </div>

@@ -29,10 +29,13 @@ const slides = [
       "Premium quality meets everyday comfort. Dress to impress, effortlessly.",
   },
 ];
-import { authServices } from "../api";
+import { useSignInMutation, useLazyGetProfileQuery } from "../store/api/authApi";
+import { useDispatch } from "react-redux";
+import { setCredentials } from "../store/slices/authSlice";
 
 const SignIn = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -40,6 +43,8 @@ const SignIn = () => {
   });
 
   const [errors, setErrors] = useState("");
+  const [signIn, { isLoading }] = useSignInMutation();
+  const [triggerGetProfile] = useLazyGetProfileQuery();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -53,25 +58,32 @@ const SignIn = () => {
     }
 
     try {
-      const res = await authServices.login(formData);
+      const res = await signIn(formData).unwrap();
+      console.log("Login API Response:", res);
+      
       toast.success(res.message || "Login Successful!", {
         duration: 3000,
         position: "top-center",
       });
 
       // Get profile to check role
-      const profile = await authServices.getProfile();
+      const profile = await triggerGetProfile().unwrap();
+      console.log("Profile Data:", profile);
       const role = profile?.userData?.role;
+      
+      // Save credentials in Redux
+      dispatch(setCredentials({ user: profile?.userData, token: null }));
 
       setTimeout(() => {
-        if (role === "admin") {
+        if (role === "admin" || role === "host") {
           navigate("/admin");
         } else {
           navigate("/");
         }
       }, 1500);
     } catch (error) {
-      const errorMsg = error?.response?.data?.message || "Something went wrong. Please check your credentials.";
+      console.error("Login / Profile Fetch Error:", error);
+      const errorMsg = error?.data?.message || "Something went wrong. Please check your credentials.";
       setErrors(errorMsg);
       toast.error(errorMsg, {
         duration: 3000,
@@ -79,6 +91,7 @@ const SignIn = () => {
       });
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
@@ -188,7 +201,7 @@ const SignIn = () => {
 
               <div className="pt-2">
                 {/* <AuthButton text="Sign In" /> */}
-                <ButtonTwo name={'Login'}/>
+                <ButtonTwo onClick={handleLogin} name={'Login'}/>
               </div>
             </form>
 

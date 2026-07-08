@@ -1,14 +1,26 @@
 import React, { useState } from 'react';
 import { HiOutlineStar, HiOutlineTrash } from 'react-icons/hi';
 import { MOCK_ADMIN_REVIEWS } from '../../data/adminMockData';
+import { useDeleteReviewMutation } from '../../store/api/reviewApi';
+import { toast } from 'react-hot-toast';
 
 const Reviews = () => {
   const [reviews, setReviews] = useState(MOCK_ADMIN_REVIEWS);
+  const [deleteReview] = useDeleteReviewMutation();
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (confirm('Moderate review: Delete this review permanently?')) {
-      setReviews(prev => prev.filter(r => r._id !== id));
-      alert('Review deleted successfully');
+      try {
+        // Try deleting via API if it's a real review, otherwise remove from local state
+        if (id && !id.toString().startsWith('rev_')) {
+          await deleteReview(id).unwrap();
+        }
+        setReviews(prev => prev.filter(r => r._id !== id));
+        toast.success('Review deleted successfully');
+      } catch (error) {
+        console.error(error);
+        toast.error(error?.data?.message || 'Failed to delete review.');
+      }
     }
   };
 

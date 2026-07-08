@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { HiOutlinePlus, HiOutlineTag, HiOutlineTrash } from 'react-icons/hi';
+import { toast } from 'react-hot-toast';
 
 const Coupons = () => {
   const [coupons, setCoupons] = useState([
@@ -20,6 +21,7 @@ const Coupons = () => {
   const handleDelete = (id) => {
     if (confirm('Delete this coupon code? It will no longer be valid for checkouts.')) {
       setCoupons(prev => prev.filter(c => c.id !== id));
+      toast.success('Promo code deleted!');
     }
   };
 
@@ -38,6 +40,7 @@ const Coupons = () => {
     setCoupons(prev => [...prev, newCoupon]);
     setIsOpen(false);
     setFormData({ code: '', discount: '', type: 'Percentage', maxUses: '', expiry: '' });
+    toast.success(`Promo code "${newCoupon.code}" created successfully!`);
   };
 
   return (
