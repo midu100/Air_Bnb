@@ -1,0 +1,46 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ECRAuth",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetAuthorizationToken"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ECRPushAirbnb",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:CompleteLayerUpload",
+        "ecr:InitiateLayerUpload",
+        "ecr:PutImage",
+        "ecr:UploadLayerPart"
+      ],
+      "Resource": [
+        "arn:aws:ecr:eu-north-1:727974228658:repository/airbnb-backend",
+        "arn:aws:ecr:eu-north-1:727974228658:repository/airbnb-frontend"
+      ]
+    },
+    {
+      "Sid": "RunAirbnbDeploy",
+      "Effect": "Allow",
+      "Action": "ssm:SendCommand",
+      "Resource": [
+        "arn:aws:ssm:eu-north-1:727974228658:document/Airbnb-Deploy",
+        "arn:aws:ec2:eu-north-1:727974228658:instance/i-050cf961af4fb2fc8"
+      ]
+    },
+    {
+      "Sid": "ReadAirbnbDeploymentStatus",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetCommandInvocation",
+        "ssm:ListCommandInvocations"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

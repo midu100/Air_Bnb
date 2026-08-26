@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "2.2",
+  "description": "Deploy the Airbnb application from Amazon ECR.",
+  "parameters": {
+    "BackendImage": {
+      "type": "String",
+      "description": "Airbnb backend ECR image.",
+      "interpolationType": "ENV_VAR",
+      "allowedPattern": "^727974228658\\.dkr\\.ecr\\.eu-north-1\\.amazonaws\\.com/airbnb-backend:[a-zA-Z0-9._-]+$"
+    },
+    "FrontendImage": {
+      "type": "String",
+      "description": "Airbnb frontend ECR image.",
+      "interpolationType": "ENV_VAR",
+      "allowedPattern": "^727974228658\\.dkr\\.ecr\\.eu-north-1\\.amazonaws\\.com/airbnb-frontend:[a-zA-Z0-9._-]+$"
+    }
+  },
+  "mainSteps": [
+    {
+      "action": "aws:runShellScript",
+      "name": "deployAirbnb",
+      "precondition": {
+        "StringEquals": [
+          "platformType",
+          "Linux"
+        ]
+      },
+      "inputs": {
+        "timeoutSeconds": "600",
+        "runCommand": [
+          "/opt/airbnb-deploy/deploy-v2.sh \"$SSM_BackendImage\" \"$SSM_FrontendImage\""
+        ]
+      }
+    }
+  ]
+}
