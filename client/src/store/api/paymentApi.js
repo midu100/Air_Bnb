@@ -2,13 +2,12 @@ import { apiSlice } from "../apiSlice";
 
 export const paymentApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    createPayment: builder.mutation({
-      query: (paymentData) => ({
-        url: "/payment/create",
+    createCheckoutSession: builder.mutation({
+      query: (bookingId) => ({
+        url: "/payment/create-session",
         method: "POST",
-        body: paymentData,
+        body: { bookingId },
       }),
-      invalidatesTags: ["Payment", "Booking"],
     }),
     getPaymentByBooking: builder.query({
       query: (bookingId) => `/payment/booking/${bookingId}`,
@@ -29,7 +28,7 @@ export const paymentApi = apiSlice.injectEndpoints({
 });
 
 export const {
-  useCreatePaymentMutation,
+  useCreateCheckoutSessionMutation,
   useGetPaymentByBookingQuery,
   useGetMyPaymentsQuery,
   useRefundPaymentMutation,

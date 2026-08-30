@@ -1,16 +1,10 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { getCookie } from "../components/common/Services";
 
+// Tokens live in httpOnly cookies now, so they ride along with credentials: 'include'
+// and can no longer be read from JS to build an Authorization header.
 const baseQuery = fetchBaseQuery({
   baseUrl: import.meta.env.VITE_API_BASE_URL || "http://localhost:8000",
   credentials: "include",
-  prepareHeaders: (headers) => {
-    const token = getCookie("X_AS-TOKEN");
-    if (token) {
-      headers.set("Authorization", `${token}`);
-    }
-    return headers;
-  },
 });
 
 const baseQueryWithReauth = async (args, api, extraOptions) => {
@@ -19,7 +13,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
   if (result.error && result.error.status === 401) {
     const refreshResult = await baseQuery(
       {
-        url: "/auth/refreshtoken", // In case backend adds it or supports it later
+        url: "/auth/refreshtoken",
         method: "POST",
       },
       api,
@@ -37,6 +31,6 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Property", "Category", "Amenity", "Booking", "Review", "Wishlist", "Payment", "Conversation", "Message", "User"],
+  tagTypes: ["Property", "Category", "Amenity", "Booking", "Review", "Wishlist", "Payment", "Conversation", "Message", "User", "Availability", "PricingRule", "Payout", "Lease", "Application"],
   endpoints: () => ({}),
 });

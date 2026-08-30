@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { getCookie } from '../components/common/Services';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
@@ -10,20 +9,9 @@ const api = axios.create({
 });
 
 /* =========================
-   REQUEST INTERCEPTOR
+   Auth tokens live in httpOnly cookies and are sent by withCredentials,
+   so there is no token for JS to read into an Authorization header.
 ========================= */
-api.interceptors.request.use(
-  (config) => {
-    const token = getCookie('X_AS-TOKEN');
-    if (token) {
-      config.headers.Authorization = `${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
 export const authServices = {
   login: async (loginData) => {
