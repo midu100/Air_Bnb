@@ -6,6 +6,12 @@
 
 const DAY_MS = 1000 * 60 * 60 * 24
 
+// ====== Where a stay stops being short term and starts being monthly.
+// Check-out day is not a night, so picking the 1st to the 30th is 29 nights.
+// A hard 30 would make every 30 day month, and February, impossible to book
+// whole. 28 is the shortest calendar month and the threshold the market uses.
+const MID_TERM_MIN_NIGHTS = 28
+
 // ====== Refund tiers, as a percent of the stay total, by days before check-in
 const CANCELLATION_POLICIES = {
     flexible:       [{ daysBefore: 1,  refundPercent: 100 }, { daysBefore: 0, refundPercent: 0 }],
@@ -261,14 +267,21 @@ const validateStay = (property, rentalType, checkIn, checkOut) => {
 
     if (rentalType === 'mid') {
         if (!property.monthlyRate) return 'This property has no monthly rate'
-        // 30 nights is where most cities stop calling it a short-term rental
-        if (nights < 30) return 'Monthly stays must be at least 30 nights'
+
+        if (nights < MID_TERM_MIN_NIGHTS) {
+            const earliest = new Date(checkIn)
+            earliest.setDate(earliest.getDate() + MID_TERM_MIN_NIGHTS)
+            return `A monthly stay needs at least ${MID_TERM_MIN_NIGHTS} nights. You have picked ${nights}. Check out on ${earliest.toDateString()} or later.`
+        }
+
         const { months } = splitTerm(checkIn, checkOut)
         const duration = effectiveMonths(checkIn, checkOut)
         const minMonths = property.minStayMonths || 1
 
-        // Tiny epsilon so 30 nights is not rejected by floating point
-        if (duration < minMonths - 0.01) return `Minimum stay is ${minMonths} month(s)`
+        // A whole calendar month counts as a month even when it is 28 or 30 days
+        if (minMonths > 1 && duration < minMonths - 0.1) {
+            return `Minimum stay is ${minMonths} months. You have picked ${nights} nights.`
+        }
         if (months > (property.maxStayMonths || 11)) return `Monthly stays cannot exceed ${property.maxStayMonths || 11} months. Try a long-term lease.`
     }
 
@@ -293,4 +306,5 @@ module.exports = {
     effectiveMonths,
     rateForNight,
     CANCELLATION_POLICIES,
+    MID_TERM_MIN_NIGHTS,
 }

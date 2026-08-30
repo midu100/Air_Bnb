@@ -202,6 +202,11 @@ const PropertyDetails = () => {
   // Only offer the horizons this listing is actually sold on
   const offeredTypes = HORIZON_LABELS.filter(item => (property?.rentalTypes || ['short']).includes(item.id))
 
+  // Nights between the two picked dates - check-out day is not a night
+  const selectedNights = checkInDate && checkOutDate
+    ? Math.round((new Date(checkOutDate) - new Date(checkInDate)) / (1000 * 60 * 60 * 24))
+    : 0
+
   const monthLabel = calendarMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
   const totalDays = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate()
   const offset = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1).getDay()
@@ -281,6 +286,64 @@ const PropertyDetails = () => {
 
     setIsError(false)
     setBookingMessage(null)
+  }
+
+  // ====== Typing a date has to pass the same checks as clicking one
+  const handleTypedDate = (field, dateStr) => {
+    if (!dateStr) {
+      if (field === 'checkIn') { setCheckInDate(''); setCheckOutDate('') } else setCheckOutDate('')
+      setBookingMessage(null)
+      return
+    }
+
+    if (dateStr < todayStr) {
+      setIsError(true)
+      setBookingMessage('That date has already passed.')
+      return
+    }
+
+    if (unavailableDates.includes(dateStr)) {
+      setIsError(true)
+      setBookingMessage('That date is already booked or blocked by the host.')
+      return
+    }
+
+    if (field === 'checkIn') {
+      setCheckInDate(dateStr)
+      // A check-out that no longer follows check-in is cleared rather than left wrong
+      if (checkOutDate && dateStr >= checkOutDate) setCheckOutDate('')
+    } else {
+      if (!checkInDate) {
+        setIsError(true)
+        setBookingMessage('Pick a check-in date first.')
+        return
+      }
+      if (dateStr <= checkInDate) {
+        setIsError(true)
+        setBookingMessage('Check-out must be after check-in.')
+        return
+      }
+
+      // Nothing in the range may be unavailable
+      const cursor = new Date(checkInDate)
+      const end = new Date(dateStr)
+      while (cursor < end) {
+        if (unavailableDates.includes(toDateStr(cursor))) {
+          setIsError(true)
+          setBookingMessage('Double Booking Prevented! Selected dates overlap with existing bookings.')
+          return
+        }
+        cursor.setDate(cursor.getDate() + 1)
+      }
+      setCheckOutDate(dateStr)
+    }
+
+    setIsError(false)
+    setBookingMessage(null)
+
+    // Move the grid to match what was typed
+    const picked = new Date(dateStr)
+    setCalendarMonth(new Date(picked.getFullYear(), picked.getMonth(), 1))
   }
 
   const handleAddToCart = () => {
@@ -911,14 +974,41 @@ const PropertyDetails = () => {
               <div className="flex flex-col justify-between space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gray-50 border border-gray-150 p-3.5 rounded-2xl">
-                    <span className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider">Check-In</span>
-                    <span className="text-xs sm:text-sm font-bold text-gray-800">{checkInDate || 'Select date'}</span>
+                    <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Check-In</label>
+                    <input
+                      type="date"
+                      value={checkInDate}
+                      min={todayStr}
+                      onChange={(e) => handleTypedDate('checkIn', e.target.value)}
+                      className="w-full bg-transparent text-xs sm:text-sm font-bold text-gray-800 focus:outline-none cursor-pointer"
+                    />
                   </div>
                   <div className="bg-gray-50 border border-gray-150 p-3.5 rounded-2xl">
-                    <span className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider">Check-Out</span>
-                    <span className="text-xs sm:text-sm font-bold text-gray-800">{checkOutDate || 'Select date'}</span>
+                    <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Check-Out</label>
+                    <input
+                      type="date"
+                      value={checkOutDate}
+                      min={checkInDate || todayStr}
+                      onChange={(e) => handleTypedDate('checkOut', e.target.value)}
+                      className="w-full bg-transparent text-xs sm:text-sm font-bold text-gray-800 focus:outline-none cursor-pointer"
+                    />
                   </div>
                 </div>
+
+                {/* The check-out day is not a night, so show the count rather than let people guess */}
+                {selectedNights > 0 && (
+                  <div className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-gray-900 text-white">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-white/60">
+                      {rentalType === 'mid' ? 'Length of stay' : 'Nights'}
+                    </span>
+                    <span className="text-xs font-bold">
+                      {selectedNights} night{selectedNights === 1 ? '' : 's'}
+                      {rentalType === 'mid' && quote && quote.months > 0
+                        ? ` · ${quote.months} month${quote.months === 1 ? '' : 's'}${quote.extraDays ? ` + ${quote.extraDays} days` : ''}`
+                        : ''}
+                    </span>
+                  </div>
+                )}
 
                 {/* ====== Live quote from the server ====== */}
                 {checkInDate && checkOutDate && (
@@ -932,7 +1022,9 @@ const PropertyDetails = () => {
                         <div className="flex justify-between text-[11px] text-gray-500">
                           <span>
                             {quote.rentalType === 'mid'
-                              ? `${quote.months} month${quote.months > 1 ? 's' : ''}${quote.extraDays ? ` + ${quote.extraDays} days` : ''} x $${quote.monthlyRate}`
+                              ? quote.months === 0
+                                ? `${quote.extraDays} days at $${quote.monthlyRate}/month`
+                                : `${quote.months} month${quote.months > 1 ? 's' : ''}${quote.extraDays ? ` + ${quote.extraDays} days` : ''} x $${quote.monthlyRate}`
                               : `${quote.nights} night${quote.nights > 1 ? 's' : ''} x $${quote.averageNightlyRate} avg`}
                           </span>
                           <span className="font-semibold text-gray-800">
@@ -978,7 +1070,7 @@ const PropertyDetails = () => {
                           <span>${quote.dueNow.toLocaleString()}</span>
                         </div>
 
-                        {quote.billingCycle === 'monthly' && (
+                        {quote.billingCycle === 'monthly' && quote.schedule.length > 0 && (
                           <div className="pt-1 space-y-1">
                             <p className="text-[10px] text-gray-400 font-semibold">
                               Then {quote.schedule.length} monthly charge{quote.schedule.length > 1 ? 's' : ''} — ${quote.totalAmount.toLocaleString()} in total
@@ -990,6 +1082,12 @@ const PropertyDetails = () => {
                               </div>
                             ))}
                           </div>
+                        )}
+
+                        {quote.billingCycle === 'monthly' && quote.schedule.length === 0 && (
+                          <p className="text-[10px] text-gray-400 font-semibold pt-1">
+                            Nothing further to pay — the whole stay is settled today.
+                          </p>
                         )}
 
                         {quote.utilitiesIncluded && (
