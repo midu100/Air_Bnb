@@ -2,13 +2,15 @@ const roleCheckMiddleware = (...roles)=>{
     const flatRoles = roles.flat();
     return (req,res,next)=>{
         try {
-            if(flatRoles.includes(req.user.role)){
+            if(req.user && flatRoles.includes(req.user.role)){
                 return next()
             }
-            return res.status(401).send({message : 'Invalid role.'})
+            return res.status(403).send({message : 'Invalid role.'})
         } 
         catch (error) {
-           console.log(error)    
+           // ========= always answer, an empty catch left the request hanging =========
+           console.log(error)
+           return res.status(500).send({message : 'Internal server error'})    
         }
     }
 }
