@@ -1,16 +1,35 @@
-# React + Vite
+# Air_Bnb — client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite 8 + Tailwind v4 front end for the Air_Bnb rental platform.
 
-Currently, two official plugins are available:
+See the [root README](../README.md) for the full project overview, setup and API reference.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Run
 
-## React Compiler
+```bash
+cp .env.example .env    # optional, defaults to http://localhost:8000
+npm install
+npm run dev             # http://localhost:5173
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Scripts
 
-## Expanding the ESLint configuration
+| Command | Does |
+|---------|------|
+| `npm run dev` | Vite dev server with HMR |
+| `npm run build` | Production build into `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | ESLint |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Layout
+
+```
+src/
+├── api/          axios instance
+├── components/   shared UI, admin/, common/
+├── i18n/         translations and LocaleContext
+├── lib/          socket.js
+├── pages/        public, guest, admin/
+├── store/        apiSlice, api/ (RTK Query endpoints), slices/
+└── layout/
+```

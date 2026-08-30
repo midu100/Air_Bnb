@@ -3,16 +3,22 @@ import { BrowserRouter, Routes, Route } from 'react-router'
 import LayoutOne from './layout/LayoutOne'
 import Home from './pages/Home'
 import Properties from './pages/Properties'
+import MapExplore from './pages/MapExplore'
 import PropertyDetails from './pages/PropertyDetails'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import VerifyOtp from './pages/VerifyOtp'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import NotFound from './pages/NotFound'
 
 // Guest dashboard / profile pages
 import MyBookings from './pages/MyBookings'
 import Wishlist from './pages/Wishlist'
 import MyPayments from './pages/MyPayments'
+import ApplyForLease from './pages/ApplyForLease'
+import MyApplications from './pages/MyApplications'
+import MyLeases from './pages/MyLeases'
 import Profile from './pages/Profile'
 import CartSlider from './components/CartSlider'
 
@@ -35,6 +41,9 @@ import AdminMessages from './pages/admin/Messages'
 import AdminAnalytics from './pages/admin/Analytics'
 import AdminCoupons from './pages/admin/Coupons'
 import AdminPayouts from './pages/admin/Payouts'
+import AdminCalendar from './pages/admin/Calendar'
+import AdminApplications from './pages/admin/Applications'
+import AdminPricingRules from './pages/admin/PricingRules'
 import AddProperty from './pages/admin/AddProperty'
 import EditProperty from './pages/admin/EditProperty'
 import AddCategory from './pages/admin/AddCategory'
@@ -61,6 +70,9 @@ const App = () => {
             <Route path="properties/add" element={<AddProperty />} />
             <Route path="properties/edit/:id" element={<EditProperty />} />
             <Route path="bookings" element={<AdminBookings />} />
+            <Route path="calendar" element={<AdminCalendar />} />
+            <Route path="applications" element={<AdminApplications />} />
+            <Route path="pricing-rules" element={<AdminPricingRules />} />
             <Route path="messages" element={<AdminMessages />} />
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="categories" element={<AdminCategories />} />
@@ -80,10 +92,13 @@ const App = () => {
           <Route path="/" element={<LayoutOne />}>
             <Route index element={<Home />} />
             <Route path="properties" element={<Properties />} />
+            <Route path="map" element={<MapExplore />} />
             <Route path="property/:id" element={<PropertyDetails />} />
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
             <Route path="verify-otp" element={<VerifyOtp />} />
+            <Route path="forgot-password" element={<ForgotPassword />} />
+            <Route path="reset-password" element={<ResetPassword />} />
 
             {/* User-specific routes — must be logged in */}
             <Route path="my-bookings" element={
@@ -94,6 +109,15 @@ const App = () => {
             } />
             <Route path="my-payments" element={
               <ProtectedRoute><MyPayments /></ProtectedRoute>
+            } />
+            <Route path="apply/:id" element={
+              <ProtectedRoute><ApplyForLease /></ProtectedRoute>
+            } />
+            <Route path="my-applications" element={
+              <ProtectedRoute><MyApplications /></ProtectedRoute>
+            } />
+            <Route path="my-leases" element={
+              <ProtectedRoute><MyLeases /></ProtectedRoute>
             } />
             <Route path="profile" element={
               <ProtectedRoute><Profile /></ProtectedRoute>

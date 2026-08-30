@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router'
 import { useSelector, useDispatch } from 'react-redux'
 import { selectCartCount, toggleCart } from '../store/slices/cartSlice'
-import { selectIsAuthenticated, selectCurrentUser, setCredentials, logout } from '../store/slices/authSlice'
-import { useGetProfileQuery } from '../store/api/authApi'
-import { HiOutlineShoppingCart, HiOutlineUserCircle, HiOutlineLogout, HiOutlineCalendar, HiOutlineHeart, HiOutlineCreditCard } from 'react-icons/hi'
+import { selectIsAuthenticated, selectCurrentUser, logout } from '../store/slices/authSlice'
+import { useLogoutMutation } from '../store/api/authApi'
+import { HiOutlineShoppingCart, HiOutlineUserCircle, HiOutlineLogout, HiOutlineCalendar, HiOutlineHeart, HiOutlineCreditCard, HiOutlineDocumentText, HiOutlineKey } from 'react-icons/hi'
 import ButtonOne from './common/ButtonOne'
+import LocaleSwitcher from './common/LocaleSwitcher'
+import { useLocale } from '../i18n/LocaleContext'
 
 
 const Navbar = () => {
@@ -27,20 +29,13 @@ const Navbar = () => {
   })
   const [isSubmitted, setIsSubmitted] = useState(false)
 
-  // Sync profile status from backend to Redux on mount
-  const { data: profileData } = useGetProfileQuery(undefined, {
-    refetchOnMountOrArgChange: true
-  })
-  
-  const isAuthenticated = useSelector(selectIsAuthenticated)
-  const currentUser = useSelector(selectCurrentUser) || profileData?.userData
-  const cartCount = useSelector(selectCartCount)
+  // PersistAuth already restores the session on mount, so read it from Redux here
+  const [logoutApi] = useLogoutMutation()
+  const { t } = useLocale()
 
-  useEffect(() => {
-    if (profileData?.userData) {
-      dispatch(setCredentials({ user: profileData.userData, token: null }))
-    }
-  }, [profileData, dispatch])
+  const isAuthenticated = useSelector(selectIsAuthenticated)
+  const currentUser = useSelector(selectCurrentUser)
+  const cartCount = useSelector(selectCartCount)
 
 
   useEffect(() => {
@@ -82,8 +77,13 @@ const Navbar = () => {
         navigate('/register')
     }
 
-    const handleLogout = () => {
-      document.cookie = "X_AS-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    const handleLogout = async () => {
+      // httpOnly cookies cannot be cleared from JS, the server has to expire them
+      try {
+        await logoutApi().unwrap()
+      } catch (err) {
+        console.log(err?.data?.message || err?.message || 'Logout failed')
+      }
       dispatch(logout())
       setIsProfileOpen(false)
       navigate('/login')
@@ -114,8 +114,9 @@ const Navbar = () => {
 
           {/* Desktop Nav Links */}
           <div className="hidden md:flex items-center gap-8">
-            <NavLink to="/" className={linkClass}>Home</NavLink>
-            <NavLink to="/properties" className={linkClass}>Find Properties</NavLink>
+            <NavLink to="/" className={linkClass}>{t('nav.home')}</NavLink>
+            <NavLink to="/properties" className={linkClass}>{t('nav.properties')}</NavLink>
+            <NavLink to="/map" className={linkClass}>{t('nav.map')}</NavLink>
             <button
               onClick={() => setIsAddModalOpen(true)}
               className="text-xl font-medium text-gray-600 hover:text-[#f0506e] transition-colors cursor-pointer bg-transparent border-none"
@@ -129,6 +130,8 @@ const Navbar = () => {
 
           {/* Desktop Action Buttons */}
           <div className="hidden md:flex items-center gap-4">
+            <LocaleSwitcher />
+
             {/* Cart Icon Button */}
             <button
               onClick={() => dispatch(toggleCart())}
@@ -204,6 +207,24 @@ const Navbar = () => {
                     >
                       <HiOutlineHeart className="w-4 h-4 text-red-400" />
                       Wishlist
+                    </Link>
+
+                    <Link
+                      to="/my-applications"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <HiOutlineDocumentText className="w-4.5 h-4.5 text-gray-400" />
+                      My Applications
+                    </Link>
+
+                    <Link
+                      to="/my-leases"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <HiOutlineKey className="w-4.5 h-4.5 text-gray-400" />
+                      My Leases
                     </Link>
 
                     <Link

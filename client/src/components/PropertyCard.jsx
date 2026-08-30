@@ -1,11 +1,21 @@
 import React from 'react'
 import { Link } from 'react-router'
 
-const PropertyCard = ({ property }) => {
+// ====== Each horizon quotes a different number against a different unit
+const PRICE_BY_TYPE = {
+  short: { field: "pricePerNight", unit: "night" },
+  mid: { field: "monthlyRate", unit: "month" },
+  long: { field: "longTermRent", unit: "month" },
+};
+
+const PropertyCard = ({ property, rentalType = "short" }) => {
   const id = property._id || property.id;
   const title = property.title;
   const location = property.city && property.country ? `${property.city}, ${property.country}` : (property.location || "");
-  const price = property.pricePerNight || property.price || 0;
+
+  const priceMode = PRICE_BY_TYPE[rentalType] || PRICE_BY_TYPE.short;
+  const priceUnit = priceMode.unit;
+  const price = property[priceMode.field] || property.pricePerNight || property.price || 0;
   const rating = property.averageRating !== undefined ? property.averageRating : (property.rating || 0);
   const reviews = property.totalReviews !== undefined ? property.totalReviews : (property.reviews || 0);
   const image = property.thumbnail || property.image || "https://picsum.photos/400/300";
@@ -49,7 +59,7 @@ const PropertyCard = ({ property }) => {
         <div className="flex justify-between items-baseline mb-1.5">
           <div>
             <span className="text-lg font-bold text-gray-900">${price}</span>
-            <span className="text-xs text-gray-400 font-normal"> / night</span>
+            <span className="text-xs text-gray-400 font-normal"> / {priceUnit}</span>
           </div>
           <div className="flex items-center gap-1">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 fill-amber-400 text-amber-400" viewBox="0 0 20 20">

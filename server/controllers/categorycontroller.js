@@ -23,7 +23,7 @@ const createCategory = async(req,res)=>{
           slug,
 
         })
-        category.save()
+        await category.save()
 
         // ========= successfull =========
         res.status(201).send({message : 'Category created.'})
@@ -31,7 +31,8 @@ const createCategory = async(req,res)=>{
 
     } 
     catch (error) {
-      console.log(error)    
+       console.log(error)
+       res.status(500).send({message : 'Internal server error'})
     }
 }
 
@@ -43,7 +44,8 @@ const getAllCategory = async(req,res)=>{
     res.status(200).send({message : 'success',category})
   } 
   catch (error) {
-     console.log(error)  
+     console.log(error)
+     res.status(500).send({message : 'Internal server error'})
   }
 }
 

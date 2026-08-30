@@ -15,7 +15,9 @@ import {
   HiOutlineLogout,
   HiOutlineChatAlt,
   HiOutlinePresentationChartLine,
-  HiOutlineCash
+  HiOutlineCash,
+  HiOutlineClock,
+  HiOutlineDocumentText
 } from 'react-icons/hi';
 
 const Sidebar = () => {
@@ -27,6 +29,9 @@ const Sidebar = () => {
     { name: 'Dashboard', path: '/admin', icon: HiOutlineViewGrid, end: true },
     { name: 'Properties', path: '/admin/properties', icon: HiOutlineHome },
     { name: 'Bookings', path: '/admin/bookings', icon: HiOutlineCalendar },
+    { name: 'Calendar', path: '/admin/calendar', icon: HiOutlineClock },
+    { name: 'Pricing Rules', path: '/admin/pricing-rules', icon: HiOutlineTag },
+    { name: 'Applications', path: '/admin/applications', icon: HiOutlineDocumentText },
     { name: 'Inbox Chat', path: '/admin/messages', icon: HiOutlineChatAlt },
     { name: 'Business Analytics', path: '/admin/analytics', icon: HiOutlinePresentationChartLine },
     { name: 'Categories', path: '/admin/categories', icon: HiOutlineTag },

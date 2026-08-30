@@ -5,10 +5,11 @@ import { selectCurrentUser } from '../../store/slices/authSlice';
 import { useGetMyConversationsQuery, useGetConversationQuery } from '../../store/api/conversationApi';
 import { useGetMessagesQuery, useSendMessageMutation } from '../../store/api/messageApi';
 import { toast } from 'react-hot-toast';
+import socket from '../../lib/socket';
 
 const Messages = () => {
   const currentUser = useSelector(selectCurrentUser);
-  const { data: conversations = [], isLoading: convLoading } = useGetMyConversationsQuery();
+  const { data: conversations = [], isLoading: convLoading, refetch: refetchConversations } = useGetMyConversationsQuery();
   const [activeChatId, setActiveChatId] = useState(null);
   
   // Set default active chat when conversations load
@@ -18,10 +19,33 @@ const Messages = () => {
     }
   }, [conversations, activeChatId]);
 
-  const { data: messages = [], isLoading: msgLoading } = useGetMessagesQuery(activeChatId, {
-    skip: !activeChatId,
-    pollingInterval: 3000 // Poll every 3 seconds for live message compatibility
+  const { data: messages = [], isLoading: msgLoading, refetch: refetchMessages } = useGetMessagesQuery(activeChatId, {
+    skip: !activeChatId
   });
+
+  // ====== Join the personal room so the sidebar updates live
+  useEffect(() => {
+    if (!currentUser?._id) return
+
+    socket.emit('setup', currentUser._id)
+
+    const handleUpdate = () => refetchConversations()
+    socket.on('conversation_updated', handleUpdate)
+
+    return () => socket.off('conversation_updated', handleUpdate)
+  }, [currentUser?._id, refetchConversations])
+
+  // ====== Join the open conversation room, replaces the old 3s polling
+  useEffect(() => {
+    if (!activeChatId) return
+
+    socket.emit('join_room', activeChatId)
+
+    const handleNew = () => refetchMessages()
+    socket.on('new_message', handleNew)
+
+    return () => socket.off('new_message', handleNew)
+  }, [activeChatId, refetchMessages])
 
   const [sendMessageMutation] = useSendMessageMutation();
   const [inputMsg, setInputMsg] = useState('');

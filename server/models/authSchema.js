@@ -38,6 +38,24 @@ const userSchema = mongoose.Schema(
     otpExpire: {
       type: Date,
     },
+
+    // ====== Stripe Connect - a host cannot legally be paid without KYC
+    stripeAccountId: {
+      type: String,
+    },
+
+    payoutsEnabled: {
+      type: Boolean,
+      default: false,
+    },
+
+    // ====== Government ID check, separate from the payout KYC
+    identityVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    identityVerificationId: String,
   },
   { timestamps: true },
 );

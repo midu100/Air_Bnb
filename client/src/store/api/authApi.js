@@ -30,6 +30,27 @@ export const authApi = apiSlice.injectEndpoints({
       query: () => "/auth/getprofile",
       providesTags: ["User"],
     }),
+    forgotPassword: builder.mutation({
+      query: (data) => ({
+        url: "/auth/forgotpassword",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    resetPassword: builder.mutation({
+      query: (data) => ({
+        url: "/auth/resetpassword",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    logout: builder.mutation({
+      query: () => ({
+        url: "/auth/logout",
+        method: "POST",
+      }),
+      invalidatesTags: ["User"],
+    }),
   }),
 });
 
@@ -39,4 +60,7 @@ export const {
   useVerifyOtpMutation,
   useGetProfileQuery,
   useLazyGetProfileQuery,
+  useLogoutMutation,
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
 } = authApi;

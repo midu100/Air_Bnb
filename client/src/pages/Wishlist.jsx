@@ -45,7 +45,7 @@ const Wishlist = () => {
           </p>
         </div>
         
-        {data?.wishlist?.properties?.length > 0 && (
+        {data?.properties?.length > 0 && (
           <button
             onClick={handleClearAll}
             disabled={isClearing}
@@ -65,7 +65,7 @@ const Wishlist = () => {
         <div className="py-20 text-center text-red-500 font-bold border border-dashed border-gray-200 rounded-3xl">
           FAILED TO LOAD WISHLIST. PLEASE LOGIN OR TRY AGAIN.
         </div>
-      ) : !data?.wishlist?.properties || data.wishlist.properties.length === 0 ? (
+      ) : !data?.properties || data.properties.length === 0 ? (
         <div className="bg-white border border-gray-100 shadow-sm p-16 rounded-3xl text-center flex flex-col items-center justify-center">
           <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center text-[#f0506e] mb-4">
             <HiOutlineHeart className="h-8 w-8" />
@@ -77,7 +77,7 @@ const Wishlist = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {data.wishlist.properties.map((property) => (
+          {data.properties.map((property) => (
             <div key={property._id || property.id} className="relative group">
               {/* Custom remove tag overlay */}
               <button 

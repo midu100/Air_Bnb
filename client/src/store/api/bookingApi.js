@@ -10,6 +10,24 @@ export const bookingApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["Booking"],
     }),
+    getQuote: builder.query({
+      query: (params) => ({
+        url: "/booking/quote",
+        params,
+      }),
+      providesTags: ["Booking"],
+    }),
+    getCancellationPreview: builder.query({
+      query: (id) => `/booking/cancellation-preview/${id}`,
+    }),
+    extendBooking: builder.mutation({
+      query: ({ id, checkOutDate }) => ({
+        url: `/booking/extend/${id}`,
+        method: "PUT",
+        body: { checkOutDate },
+      }),
+      invalidatesTags: ["Booking"],
+    }),
     getAvailability: builder.query({
       query: (propertyId) => `/booking/availability/${propertyId}`,
       providesTags: ["Booking"],
@@ -52,6 +70,10 @@ export const bookingApi = apiSlice.injectEndpoints({
 
 export const {
   useCreateBookingMutation,
+  useGetQuoteQuery,
+  useLazyGetQuoteQuery,
+  useGetCancellationPreviewQuery,
+  useExtendBookingMutation,
   useGetAvailabilityQuery,
   useGetMyBookingsQuery,
   useGetHostBookingsQuery,

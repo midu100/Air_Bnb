@@ -35,6 +35,25 @@ const AddProperty = () => {
       fd.append('category', data.category);
       fd.append('status', data.status);
       fd.append('amenities', JSON.stringify(data.amenities));
+      fd.append('rentalTypes', JSON.stringify(data.rentalTypes));
+      fd.append('monthlyRate', data.monthlyRate || '');
+      fd.append('longTermRent', data.longTermRent || '');
+      fd.append('minStayNights', data.minStayNights);
+      fd.append('maxStayNights', data.maxStayNights);
+      fd.append('minTermMonths', data.minTermMonths);
+      fd.append('securityDeposit', data.securityDeposit);
+      fd.append('utilitiesIncluded', data.utilitiesIncluded);
+      fd.append('furnished', data.furnished);
+      fd.append('discounts', JSON.stringify({ weekly: Number(data.discountWeekly) || 0, monthly: Number(data.discountMonthly) || 0 }));
+      fd.append('cancellationPolicy', data.cancellationPolicy);
+      fd.append('taxRatePercent', data.taxRatePercent);
+      fd.append('currency', data.currency);
+      fd.append('workspace', JSON.stringify({
+        dedicatedDesk: data.dedicatedDesk,
+        monitor: data.monitor,
+        laundryInUnit: data.laundryInUnit,
+        internetSpeedMbps: Number(data.internetSpeedMbps) || undefined,
+      }));
       
       // Files
       fd.append('thumbnail', data.thumbnailFile);

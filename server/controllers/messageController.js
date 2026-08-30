@@ -1,6 +1,11 @@
 const messageSchema = require("../models/messageSchema");
 const conversationSchema = require("../models/conversationSchema");
 
+// Every message route used to trust the conversationId alone, so any logged in user could
+// read or post into somebody else's chat. Membership is now checked on each call.
+const isParticipant = (conv, userId) =>
+  String(conv.creator) === String(userId) || String(conv.participant) === String(userId);
+
 // ========= sendMessage =========
 const sendMessage = async (req, res) => {
   const { conversationId, content, contentType = 'text' } = req.body;
@@ -12,6 +17,10 @@ const sendMessage = async (req, res) => {
     const isExistConv = await conversationSchema.findById(conversationId);
     if (!isExistConv) {
       return res.status(400).send({ message : 'Conversation not found' });
+    }
+
+    if (!isParticipant(isExistConv, req.user._id)) {
+      return res.status(403).send({ message : 'Unauthorized' });
     }
 
     const message = new messageSchema({
@@ -58,11 +67,18 @@ const getMessages = async (req, res) => {
       return res.status(400).send({ message : 'Conversation ID is required' });
     }
 
+    const conv = await conversationSchema.findById(conversationId);
+    if (!conv) {
+      return res.status(404).send({ message : 'Conversation not found' });
+    }
+
+    if (!isParticipant(conv, req.user._id)) {
+      return res.status(403).send({ message : 'Unauthorized' });
+    }
+
     const messageList = await messageSchema.find({ conversation: conversationId })
       .populate('sender', 'fullName profileImg')
       .sort({ createdAt: 1 });
-
-    global.io.to(conversationId).emit('new_message', messageList);
 
     res.status(200).send(messageList);
   } catch (error) {
@@ -78,6 +94,11 @@ const markAsSeen = async (req, res) => {
     const message = await messageSchema.findById(id);
     if (!message) {
       return res.status(404).send({ message : 'Message not found' });
+    }
+
+    const conv = await conversationSchema.findById(message.conversation);
+    if (!conv || !isParticipant(conv, req.user._id)) {
+      return res.status(403).send({ message : 'Unauthorized' });
     }
 
     message.seen = true;

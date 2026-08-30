@@ -10,6 +10,12 @@ const wishlistRoute = require('./wishlist')
 const paymentRoute = require('./payment')
 const conversationRoute = require('./conversation')
 const messageRoute = require('./message')
+const leaseRoute = require('./lease')
+const applicationRoute = require('./application')
+const availabilityRoute = require('./availability')
+const pricingRuleRoute = require('./pricingRule')
+const payoutRoute = require('./payout')
+const currencyRoute = require('./currency')
 
 // root endpoints for checking server,Server starting or not.
 route.get('/',(req,res)=>{
@@ -26,6 +32,12 @@ route.use('/wishlist',wishlistRoute)
 route.use('/payment',paymentRoute)
 route.use('/conversations',conversationRoute)
 route.use('/api/messages',messageRoute)
+route.use('/lease',leaseRoute)
+route.use('/application',applicationRoute)
+route.use('/availability',availabilityRoute)
+route.use('/pricing-rule',pricingRuleRoute)
+route.use('/payout',payoutRoute)
+route.use('/currency',currencyRoute)
 
 
 // for any invalid endpoints or route

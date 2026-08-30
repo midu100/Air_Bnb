@@ -36,7 +36,8 @@ const addToWishlist = async(req,res)=>{
 
     } 
     catch (error) {
-      console.log(error)    
+       console.log(error)
+       res.status(500).send({message : 'Internal server error'})
     }
 }
 
@@ -61,7 +62,8 @@ const removeFromWishlist = async(req,res)=>{
 
     } 
     catch (error) {
-      console.log(error)    
+       console.log(error)
+       res.status(500).send({message : 'Internal server error'})
     }
 }
 
@@ -76,7 +78,8 @@ const getMyWishlist = async(req,res)=>{
         res.status(200).send({message : 'success',properties : wishlist.properties})
     } 
     catch (error) {
-       console.log(error)  
+       console.log(error)
+       res.status(500).send({message : 'Internal server error'})
     }
 }
 
@@ -93,7 +96,8 @@ const clearWishlist = async(req,res)=>{
 
     } 
     catch (error) {
-      console.log(error)    
+       console.log(error)
+       res.status(500).send({message : 'Internal server error'})
     }
 }
 

@@ -20,7 +20,8 @@ const createAmenity = async(req,res)=>{
 
     } 
     catch (error) {
-      console.log(error)    
+       console.log(error)
+       res.status(500).send({message : 'Internal server error'})
     }
 }
 
@@ -32,7 +33,8 @@ const getAllAmenity = async(req,res)=>{
         res.status(200).send({message : 'success',amenities})
     } 
     catch (error) {
-       console.log(error)  
+       console.log(error)
+       res.status(500).send({message : 'Internal server error'})
     }
 }
 
@@ -51,7 +53,8 @@ const updateAmenity = async(req,res)=>{
 
     } 
     catch (error) {
-      console.log(error)    
+       console.log(error)
+       res.status(500).send({message : 'Internal server error'})
     }
 }
 
@@ -69,7 +72,8 @@ const deleteAmenity = async(req,res)=>{
 
     } 
     catch (error) {
-      console.log(error)    
+       console.log(error)
+       res.status(500).send({message : 'Internal server error'})
     }
 }
 

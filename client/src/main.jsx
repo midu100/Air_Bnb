@@ -4,11 +4,14 @@ import { Provider } from 'react-redux'
 import store from './store/store'
 import './index.css'
 import App from './App.jsx'
+import { LocaleProvider } from './i18n/LocaleContext'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Provider store={store}>
-      <App />
+      <LocaleProvider>
+        <App />
+      </LocaleProvider>
     </Provider>
   </StrictMode>,
 )

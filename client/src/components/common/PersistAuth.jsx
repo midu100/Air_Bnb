@@ -1,40 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setCredentials, selectIsAuthenticated } from "../../store/slices/authSlice";
 import { useGetProfileQuery } from "../../store/api/authApi";
-import { getCookie } from "./Services";
 
 /**
- * PersistAuth — Restores Redux auth state from cookies on page load/refresh.
- * 
- * Problem: After login, the server sets X_AS-TOKEN cookie. On page refresh,
- * Redux state is lost (user=null, isAuthenticated=false). This component
- * detects the cookie and re-fetches the profile to restore the session.
+ * PersistAuth — Restores Redux auth state on page load/refresh.
+ *
+ * The auth cookie is httpOnly, so the browser can no longer tell us whether a session
+ * exists. We ask the server once on mount instead and treat a 401 as "logged out".
  */
 const PersistAuth = ({ children }) => {
   const dispatch = useDispatch();
   const isAuthenticated = useSelector(selectIsAuthenticated);
-  const hasCookie = !!getCookie("X_AS-TOKEN");
 
-  // Only fetch profile if cookie exists but Redux state was lost
   const { data, isLoading, isSuccess } = useGetProfileQuery(undefined, {
-    skip: isAuthenticated || !hasCookie,
+    skip: isAuthenticated,
   });
-
-  const [isRestoring, setIsRestoring] = useState(hasCookie && !isAuthenticated);
 
   useEffect(() => {
     if (isSuccess && data?.userData) {
       dispatch(setCredentials({ user: data.userData, token: null }));
     }
-    // After query completes (success or not), we're done restoring
-    if (!isLoading && isRestoring) {
-      setIsRestoring(false);
-    }
-  }, [isSuccess, data, isLoading, isRestoring, dispatch]);
+  }, [isSuccess, data, dispatch]);
 
-  // Show a loading spinner while restoring session
-  if (isRestoring && isLoading) {
+  // Hold the app back until Redux reflects the answer. Rendering children the
+  // moment the request resolves gives ProtectedRoute one pass where
+  // isAuthenticated is still false, which bounces the user to /login on refresh.
+  if (isLoading || (isSuccess && !isAuthenticated)) {
     return (
       <div style={{
         display: 'flex',

@@ -9,13 +9,20 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Callers fire this without awaiting. Node crashes the process on an unhandled rejection,
+// so an SMTP outage must never escape this function.
 const sendEmail = async({email,subject,template,item})=>{
-     const info = await transporter.sendMail({
-    from: `"Air-bnb" <${process.env.SMTP_USER}>`, // sender address
-    to: email, // list of recipients
-    subject: subject, // subject line
-    html: template(item), // HTML body
-  });
+  try {
+    const info = await transporter.sendMail({
+      from: `"Air-bnb" <${process.env.SMTP_USER}>`, // sender address
+      to: email, // list of recipients
+      subject: subject, // subject line
+      html: template(item), // HTML body
+    });
+    return info
+  } catch (error) {
+    console.log(error)
+  }
 }
 
 module.exports = sendEmail
