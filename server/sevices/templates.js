@@ -114,5 +114,64 @@ const bookingConfirmationTemp = (item) => {
   `
 };
 
-module.exports = { emailVerificationTemp, bookingConfirmationTemp };
+
+const resetPasswordTemp = (item) => {
+  return `
+  <div class="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 px-4 py-10">
+    <div
+      class="flex flex-col w-full max-w-lg rounded-3xl border border-white/10 bg-white/10 backdrop-blur-2xl shadow-2xl overflow-hidden"
+    >
+      <!-- Top Blur -->
+      <div class="flex h-2 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-500"></div>
+
+      <div class="flex flex-col px-10 py-12">
+        <!-- Logo -->
+        <div class="flex items-center justify-center">
+          <div
+            class="flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 border border-white/20 shadow-lg"
+          >
+            <span class="text-3xl">&#128273;</span>
+          </div>
+        </div>
+
+        <!-- Heading -->
+        <div class="flex flex-col items-center mt-8">
+          <h1 class="text-3xl font-bold text-white">
+            Reset Your Password
+          </h1>
+
+          <p class="text-sm text-slate-300 text-center mt-3 leading-6">
+            Use the code below to set a new password. It expires in 5 minutes.
+          </p>
+        </div>
+
+        <!-- OTP -->
+        <div class="flex items-center justify-center mt-10">
+          <div
+            class="flex items-center justify-center px-10 py-5 rounded-2xl bg-white/10 border border-white/20 shadow-xl"
+          >
+            <span class="text-4xl font-bold tracking-[14px] text-white">
+              ${item}
+            </span>
+          </div>
+        </div>
+
+        <!-- Info -->
+        <div class="flex flex-col mt-10">
+          <div
+            class="flex items-center rounded-2xl border border-white/10 bg-white/5 px-5 py-4"
+          >
+            <p class="text-sm text-slate-300 leading-6">
+              If you did not request a password reset, you can safely ignore this
+              email. Your password will stay unchanged.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  `;
+};
+
+module.exports = { emailVerificationTemp, bookingConfirmationTemp, resetPasswordTemp };
 
