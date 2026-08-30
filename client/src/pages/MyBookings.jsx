@@ -1,17 +1,58 @@
-import React from "react";
-import { useGetMyBookingsQuery, useCancelBookingMutation } from "../store/api/bookingApi";
-import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUser, HiOutlineCash, HiOutlineTrash } from "react-icons/hi";
+import React, { useState } from "react";
+import { useSearchParams } from "react-router";
+import { useGetMyBookingsQuery, useCancelBookingMutation, useExtendBookingMutation } from "../store/api/bookingApi";
+import { useCreateCheckoutSessionMutation } from "../store/api/paymentApi";
+import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUser, HiOutlineCash, HiOutlineTrash, HiOutlineCreditCard } from "react-icons/hi";
 import toast from "react-hot-toast";
 
 const MyBookings = () => {
+  const [searchParams] = useSearchParams();
   const { data, isLoading, error, refetch } = useGetMyBookingsQuery();
   const [cancelBooking, { isLoading: isCancelling }] = useCancelBookingMutation();
+  const [createCheckoutSession, { isLoading: isRedirecting }] = useCreateCheckoutSessionMutation();
+  const [extendBooking, { isLoading: isExtending }] = useExtendBookingMutation();
+
+  // Which booking is showing its extend field
+  const [extendingId, setExtendingId] = useState(null);
+  const [newCheckOut, setNewCheckOut] = useState("");
+
+  // Stripe sends the guest back here when they abandon the hosted checkout page
+  const [noticeShown, setNoticeShown] = useState(false);
+  if (!noticeShown && searchParams.get("payment") === "cancelled") {
+    setNoticeShown(true);
+    toast("Payment cancelled. Your booking is still held for a short while.", { position: "top-center" });
+  }
+
+  const handlePayNow = async (id) => {
+    try {
+      const res = await createCheckoutSession(id).unwrap();
+      // Hand the guest over to the Stripe hosted page
+      window.location.assign(res.url);
+    } catch (err) {
+      console.log(err);
+      toast.error(err?.data?.message || err?.message || "Could not start checkout.", { position: "top-center" });
+    }
+  };
+
+  const handleExtend = async (id) => {
+    if (!newCheckOut) return toast.error("Pick a new check-out date", { position: "top-center" });
+    try {
+      const res = await extendBooking({ id, checkOutDate: newCheckOut }).unwrap();
+      toast.success(res.message, { position: "top-center", duration: 5000 });
+      setExtendingId(null);
+      setNewCheckOut("");
+      refetch();
+    } catch (err) {
+      console.log(err);
+      toast.error(err?.data?.message || err?.message || "Could not change those dates.", { position: "top-center" });
+    }
+  };
 
   const handleCancel = async (id) => {
     if (confirm("Are you sure you want to cancel this booking?")) {
       try {
         const res = await cancelBooking(id).unwrap();
-        toast.success(res.message || "Booking cancelled successfully", { position: "top-center" });
+        toast.success(res.message || "Booking cancelled successfully", { position: "top-center", duration: 6000 });
         refetch();
       } catch (err) {
         console.error(err);
@@ -70,9 +111,16 @@ const MyBookings = () => {
             <div key={booking._id} className="bg-white border border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all p-5 flex flex-col sm:flex-row gap-5 text-left relative overflow-hidden">
               
               {/* Status Badge */}
-              <span className={`absolute top-4 right-4 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${getStatusClass(booking.bookingStatus)}`}>
-                {booking.bookingStatus}
-              </span>
+              <div className="absolute top-4 right-4 flex items-center gap-1.5">
+                {booking.rentalType === "mid" && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border bg-teal-50 text-teal-700 border-teal-200">
+                    Monthly
+                  </span>
+                )}
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${getStatusClass(booking.bookingStatus)}`}>
+                  {booking.bookingStatus}
+                </span>
+              </div>
 
               {/* Property Image */}
               <div className="w-full sm:w-32 h-32 rounded-2xl overflow-hidden bg-gray-100 border border-gray-50 shrink-0">
@@ -121,9 +169,48 @@ const MyBookings = () => {
                   </div>
                 </div>
 
-                {/* Cancel Action */}
+                {/* Extend / shorten - the defining mid-term behaviour */}
+                {extendingId === booking._id && (
+                  <div className="mt-3 p-3 bg-gray-50 border border-gray-100 rounded-2xl flex flex-col sm:flex-row gap-2 sm:items-center">
+                    <div className="flex-1">
+                      <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">New check-out</label>
+                      <input
+                        type="date"
+                        value={newCheckOut}
+                        onChange={(e) => setNewCheckOut(e.target.value)}
+                        className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#f0506e]"
+                      />
+                    </div>
+                    <button
+                      onClick={() => handleExtend(booking._id)}
+                      disabled={isExtending}
+                      className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer border-none active:scale-95 disabled:opacity-50 self-end sm:self-auto"
+                    >
+                      {isExtending ? "Updating..." : "Update stay"}
+                    </button>
+                  </div>
+                )}
+
+                {/* Payment & Cancel Actions */}
                 {(booking.bookingStatus === "pending" || booking.bookingStatus === "confirmed") && (
-                  <div className="flex justify-end pt-4 sm:pt-0">
+                  <div className="flex justify-end items-center gap-2 pt-4 sm:pt-0">
+                    {booking.paymentStatus === "pending" && booking.bookingStatus === "pending" && (
+                      <button
+                        onClick={() => handlePayNow(booking._id)}
+                        disabled={isRedirecting}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-[#f0506e] hover:bg-[#d94560] text-white text-xs font-semibold rounded-xl transition-all cursor-pointer border-none active:scale-95"
+                      >
+                        <HiOutlineCreditCard className="w-4 h-4" />
+                        Pay Now
+                      </button>
+                    )}
+                    <button
+                      onClick={() => { setExtendingId(extendingId === booking._id ? null : booking._id); setNewCheckOut(""); }}
+                      className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs font-semibold rounded-xl transition-all cursor-pointer bg-transparent active:scale-95"
+                    >
+                      <HiOutlineCalendar className="w-4 h-4" />
+                      Change dates
+                    </button>
                     <button
                       onClick={() => handleCancel(booking._id)}
                       disabled={isCancelling}

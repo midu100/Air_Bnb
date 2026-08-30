@@ -4,10 +4,17 @@ import { useDispatch, useSelector } from 'react-redux'
 import { MOCK_PROPERTIES } from '../data/mockProperties'
 import ThreeSixtyViewer from '../components/ThreeSixtyViewer'
 import { useGetPropertyByIdQuery } from '../store/api/propertyApi'
-import { useGetAvailabilityQuery } from '../store/api/bookingApi'
+import { useGetAvailabilityQuery, useGetQuoteQuery } from '../store/api/bookingApi'
 import { addToCart } from '../store/slices/cartSlice'
 import { selectIsAuthenticated } from '../store/slices/authSlice'
 import toast from 'react-hot-toast'
+
+// Formats a Date as YYYY-MM-DD in local time (toISOString would shift across timezones)
+const toDateStr = (date) => {
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
+}
 
 const FloorPlanSVG = () => (
   <svg viewBox="0 0 800 500" className="w-full h-full text-gray-600 bg-gray-50 rounded-2xl md:rounded-3xl p-6 sm:p-8" fill="none" stroke="currentColor" strokeWidth="2">
@@ -92,6 +99,33 @@ const PropertyDetails = () => {
   const navigate = useNavigate()
   const isAuthenticated = useSelector(selectIsAuthenticated)
 
+  // ====== State Management
+  // Every hook must run before the early returns further down, otherwise the hook count
+  // changes between the loading and loaded renders and React throws.
+  const [activeTab, setActiveTab] = useState('gallery') // gallery, smartVIEW, video, layout
+  const [currentImgIndex, setCurrentImgIndex] = useState(0)
+  const [isSaved, setIsSaved] = useState(false)
+  const [copiedId, setCopiedId] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
+
+  // Booking details & calendar state (Preserving original functional features)
+  const [checkInDate, setCheckInDate] = useState('')
+  const [checkOutDate, setCheckOutDate] = useState('')
+  const [bookingMessage, setBookingMessage] = useState(null)
+  const [isError, setIsError] = useState(false)
+
+  const today = new Date()
+  const todayStr = toDateStr(today)
+  const [calendarMonth, setCalendarMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
+
+  // ====== Which horizon the guest is shopping for on this page
+  const [rentalType, setRentalType] = useState('short')
+
+  const HORIZON_LABELS = [
+    { id: 'short', label: 'Nightly', hint: '1-29 nights' },
+    { id: 'mid', label: 'Monthly', hint: '1-11 months' },
+  ]
+
   // Fetch property from API
   const { data: apiData, isLoading, error } = useGetPropertyByIdQuery(id)
   const apiProperty = apiData?.property || null
@@ -121,25 +155,29 @@ const PropertyDetails = () => {
   // Fetch real booking availability to compute unavailable dates
   const { data: availData } = useGetAvailabilityQuery(id, { skip: !apiProperty })
 
+  // ====== The server prices the stay, so seasonal rules, discounts and tax all apply
+  const { data: quoteData, isFetching: quoteLoading, error: quoteError } = useGetQuoteQuery(
+    { propertyId: id, rentalType, checkInDate, checkOutDate },
+    { skip: !apiProperty || !checkInDate || !checkOutDate }
+  )
+  const quote = quoteData?.quote || null
+  const quoteMessage = quoteError?.data?.message || null
+
   // Compute unavailable date strings from availability API data
   const unavailableDates = useMemo(() => {
-    if (!availData?.data) return property?.unavailableDates || []
+    if (!availData?.data) return []
     const dates = []
     for (const booking of availData.data) {
       let current = new Date(booking.checkInDate)
       const end = new Date(booking.checkOutDate)
       while (current < end) {
-        dates.push(current.toISOString().split('T')[0])
+        // toISOString would shift the day in negative-offset timezones
+        dates.push(toDateStr(current))
         current.setDate(current.getDate() + 1)
       }
     }
     return dates
-  }, [availData, property?.unavailableDates])
-
-  // Override property.unavailableDates with computed values
-  if (property) {
-    property.unavailableDates = unavailableDates
-  }
+  }, [availData])
 
   if (isLoading) {
     return (
@@ -160,36 +198,43 @@ const PropertyDetails = () => {
     )
   }
 
-  // State Management
-  const [activeTab, setActiveTab] = useState('gallery') // gallery, smartVIEW, video, layout
-  const [currentImgIndex, setCurrentImgIndex] = useState(0)
-  const [isSaved, setIsSaved] = useState(false)
-  const [copiedId, setCopiedId] = useState(false)
-  const [copiedLink, setCopiedLink] = useState(false)
+  // ====== Calendar is driven by a real month instead of a hardcoded July 2026 grid
+  // Only offer the horizons this listing is actually sold on
+  const offeredTypes = HORIZON_LABELS.filter(item => (property?.rentalTypes || ['short']).includes(item.id))
 
-  // Booking details & calendar state (Preserving original functional features)
-  const [checkInDate, setCheckInDate] = useState('')
-  const [checkOutDate, setCheckOutDate] = useState('')
-  const [bookingMessage, setBookingMessage] = useState(null)
-  const [isError, setIsError] = useState(false)
-
-  // Generate calendar days for July 2026 (31 days)
-  const totalDays = 31
-  const offset = 3
+  const monthLabel = calendarMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+  const totalDays = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate()
+  const offset = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1).getDay()
   const daysArray = Array.from({ length: totalDays }, (_, i) => i + 1)
-  const emptyBoxes = Array.from({ length: offset }, (_, i) => null)
+  const emptyBoxes = Array.from({ length: offset }, () => null)
   const calendarGrid = [...emptyBoxes, ...daysArray]
+
+  // A day is only bookable if it is not already booked and not in the past
+  const dayToDateStr = (day) =>
+    toDateStr(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), day))
+
+  const isPastMonth =
+    calendarMonth.getFullYear() === today.getFullYear() && calendarMonth.getMonth() === today.getMonth()
+
+  const handlePrevMonth = () => {
+    if (isPastMonth) return
+    setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))
+  }
+
+  const handleNextMonth = () => {
+    setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))
+  }
 
   const checkUnavailable = (day) => {
     if (!day) return false
-    const dateStr = `2026-07-${day.toString().padStart(2, '0')}`
-    return property.unavailableDates.includes(dateStr)
+    const dateStr = dayToDateStr(day)
+    return dateStr < todayStr || unavailableDates.includes(dateStr)
   }
 
   const handleDateSelect = (day) => {
     if (!day || checkUnavailable(day)) return
 
-    const dateStr = `2026-07-${day.toString().padStart(2, '0')}`
+    const dateStr = dayToDateStr(day)
 
     if (!checkInDate || (checkInDate && checkOutDate)) {
       setCheckInDate(dateStr)
@@ -207,7 +252,7 @@ const PropertyDetails = () => {
 
         while (currentDate <= targetDate) {
           const dateFormatted = currentDate.toISOString().split('T')[0]
-          if (property.unavailableDates.includes(dateFormatted)) {
+          if (unavailableDates.includes(dateFormatted)) {
             hasOverlap = true
             break
           }
@@ -245,28 +290,27 @@ const PropertyDetails = () => {
       return
     }
 
-    const checkIn = new Date(checkInDate)
-    const checkOut = new Date(checkOutDate)
-    const totalNights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24))
-    const pricePerNight = property.pricePerNight || property.price || 0
-    const cleaningFee = property.cleaningFee || 0
-    const serviceFee = property.serviceFee || property.serviceCharge || 0
-    const totalAmount = (pricePerNight * totalNights) + cleaningFee + serviceFee
+    if (!quote) {
+      setIsError(true)
+      setBookingMessage('Still pricing this stay. Try again in a moment.')
+      return
+    }
 
     dispatch(addToCart({
+      rentalType,
       property: {
         _id: property._id || property.id,
         title: property.title,
         thumbnail: property.thumbnail || property.image,
         city: property.city || '',
         country: property.country || '',
-        pricePerNight,
+        pricePerNight: property.pricePerNight,
       },
       checkInDate,
       checkOutDate,
       guestsCount: property.maxGuests || 2,
-      totalNights,
-      totalAmount,
+      totalNights: quote.nights,
+      totalAmount: quote.dueNow,
     }))
 
     toast.success('Added to cart! Open cart to checkout.', { position: 'top-center' })
@@ -274,7 +318,7 @@ const PropertyDetails = () => {
 
   const isSelected = (day) => {
     if (!day) return false
-    const dateStr = `2026-07-${day.toString().padStart(2, '0')}`
+    const dateStr = dayToDateStr(day)
     if (checkInDate === dateStr) return 'bg-rose-500 text-white rounded-l-full'
     if (checkOutDate === dateStr) return 'bg-rose-500 text-white rounded-r-full'
 
@@ -756,7 +800,45 @@ const PropertyDetails = () => {
             <div className="flex justify-between items-center border-b border-gray-100 pb-4">
               <div>
                 <h2 className="text-xl sm:text-2xl font-display font-extrabold text-gray-900">Select Booking Dates</h2>
-                <p className="text-[10px] text-gray-400 mt-1">July 2026 calendar. Red-bordered dates are unavailable.</p>
+                <p className="text-[10px] text-gray-400 mt-1">Red-bordered dates are unavailable.</p>
+
+                {/* A long lease is applied for, not booked */}
+                {(property?.rentalTypes || []).includes('long') && (
+                  <div className="mt-4 p-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold text-indigo-900">Also available on a long lease</p>
+                      <p className="text-[11px] text-indigo-700/80 font-semibold mt-0.5">
+                        ${(property.longTermRent || 0).toLocaleString()} / month rent, {property.minTermMonths || 12} month minimum
+                      </p>
+                    </div>
+                    <Link
+                      to={`/apply/${property._id || property.id}`}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center whitespace-nowrap"
+                    >
+                      Apply to rent
+                    </Link>
+                  </div>
+                )}
+
+                {/* ====== Rental horizon switcher ====== */}
+                {offeredTypes.length > 1 && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {offeredTypes.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => setRentalType(item.id)}
+                        className={`px-3.5 py-2 rounded-xl border text-left transition-all cursor-pointer ${
+                          rentalType === item.id
+                            ? 'border-rose-500 bg-rose-50 text-rose-600'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        <span className="block text-[11px] font-bold">{item.label}</span>
+                        <span className="block text-[9px] opacity-70 font-semibold">{item.hint}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase flex items-center gap-1">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
@@ -768,6 +850,32 @@ const PropertyDetails = () => {
               
               {/* Calendar Grid Container */}
               <div>
+                {/* ====== Month navigation ====== */}
+                <div className="flex items-center justify-between mb-3">
+                  <button
+                    onClick={handlePrevMonth}
+                    disabled={isPastMonth}
+                    className="w-8 h-8 rounded-lg border border-gray-200 text-gray-600 flex items-center justify-center transition-all hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                    title="Previous month"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+
+                  <span className="text-xs font-bold text-gray-800 tracking-wide">{monthLabel}</span>
+
+                  <button
+                    onClick={handleNextMonth}
+                    className="w-8 h-8 rounded-lg border border-gray-200 text-gray-600 flex items-center justify-center transition-all hover:bg-gray-50 cursor-pointer"
+                    title="Next month"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+
                 <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-gray-500 mb-3 uppercase tracking-wider">
                   <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
                 </div>
@@ -811,6 +919,90 @@ const PropertyDetails = () => {
                     <span className="text-xs sm:text-sm font-bold text-gray-800">{checkOutDate || 'Select date'}</span>
                   </div>
                 </div>
+
+                {/* ====== Live quote from the server ====== */}
+                {checkInDate && checkOutDate && (
+                  <div className="bg-white border border-gray-150 rounded-2xl p-4 space-y-2.5">
+                    {quoteLoading ? (
+                      <div className="text-[11px] text-gray-400 font-semibold py-3 text-center">Pricing your stay...</div>
+                    ) : quoteMessage ? (
+                      <div className="text-[11px] text-rose-600 font-semibold py-2">{quoteMessage}</div>
+                    ) : quote ? (
+                      <>
+                        <div className="flex justify-between text-[11px] text-gray-500">
+                          <span>
+                            {quote.rentalType === 'mid'
+                              ? `${quote.months} month${quote.months > 1 ? 's' : ''}${quote.extraDays ? ` + ${quote.extraDays} days` : ''} x $${quote.monthlyRate}`
+                              : `${quote.nights} night${quote.nights > 1 ? 's' : ''} x $${quote.averageNightlyRate} avg`}
+                          </span>
+                          <span className="font-semibold text-gray-800">
+                            ${quote.rentalType === 'mid'
+                              ? (quote.months * quote.monthlyRate + (quote.proratedAmount || 0)).toLocaleString()
+                              : (quote.averageNightlyRate * quote.nights).toLocaleString()}
+                          </span>
+                        </div>
+
+                        {quote.discountPercent > 0 && (
+                          <div className="flex justify-between text-[11px] text-green-600 font-semibold">
+                            <span>{quote.discountPercent}% length-of-stay discount</span>
+                            <span>-${quote.discountAmount.toLocaleString()}</span>
+                          </div>
+                        )}
+
+                        {quote.cleaningFee > 0 && (
+                          <div className="flex justify-between text-[11px] text-gray-500">
+                            <span>Cleaning fee</span><span className="font-semibold text-gray-800">${quote.cleaningFee}</span>
+                          </div>
+                        )}
+
+                        {quote.serviceFee > 0 && (
+                          <div className="flex justify-between text-[11px] text-gray-500">
+                            <span>Service fee</span><span className="font-semibold text-gray-800">${quote.serviceFee}</span>
+                          </div>
+                        )}
+
+                        {quote.taxAmount > 0 && (
+                          <div className="flex justify-between text-[11px] text-gray-500">
+                            <span>Taxes ({quote.taxRatePercent}%)</span><span className="font-semibold text-gray-800">${quote.taxAmount}</span>
+                          </div>
+                        )}
+
+                        {quote.securityDeposit > 0 && (
+                          <div className="flex justify-between text-[11px] text-gray-500">
+                            <span>Refundable deposit</span><span className="font-semibold text-gray-800">${quote.securityDeposit.toLocaleString()}</span>
+                          </div>
+                        )}
+
+                        <div className="flex justify-between pt-2.5 border-t border-gray-100 text-sm font-extrabold text-gray-900">
+                          <span>{quote.billingCycle === 'monthly' ? 'Due today' : 'Total'}</span>
+                          <span>${quote.dueNow.toLocaleString()}</span>
+                        </div>
+
+                        {quote.billingCycle === 'monthly' && (
+                          <div className="pt-1 space-y-1">
+                            <p className="text-[10px] text-gray-400 font-semibold">
+                              Then {quote.schedule.length} monthly charge{quote.schedule.length > 1 ? 's' : ''} — ${quote.totalAmount.toLocaleString()} in total
+                            </p>
+                            {quote.schedule.slice(0, 3).map((charge, index) => (
+                              <div key={index} className="flex justify-between text-[10px] text-gray-400">
+                                <span>{new Date(charge.dueDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                <span>${charge.amount.toLocaleString()}{charge.prorated ? ' (prorated)' : ''}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {quote.utilitiesIncluded && (
+                          <p className="text-[10px] text-green-600 font-semibold pt-1">Utilities included{quote.utilityCap ? ` up to $${quote.utilityCap}/month` : ''}</p>
+                        )}
+
+                        <p className="text-[10px] text-gray-400 font-semibold capitalize pt-1">
+                          {quote.cancellationPolicy.replace('_', ' ')} cancellation policy
+                        </p>
+                      </>
+                    ) : null}
+                  </div>
+                )}
 
                 {bookingMessage && (
                   <div
@@ -901,16 +1093,16 @@ const PropertyDetails = () => {
             <div className="space-y-1.5 pb-5 border-b border-gray-100">
               <div className="flex items-baseline">
                 <span className="text-2xl sm:text-3xl font-display font-extrabold text-gray-900">
-                  ৳{(property.price * 500).toLocaleString()}
+                  ${(property.pricePerNight || property.price || 0).toLocaleString()}
                 </span>
-                <span className="text-xs text-gray-400 font-bold ml-1">/ month</span>
+                <span className="text-xs text-gray-400 font-bold ml-1">/ night</span>
               </div>
               
               <div className="flex items-center gap-1.5 text-xs text-gray-500 font-semibold bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-150 w-fit">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                Service Charge ৳{((property.serviceCharge || 15) * 500).toLocaleString()}
+                Service Charge ${(property.serviceFee || property.serviceCharge || 0).toLocaleString()}
               </div>
             </div>
 
