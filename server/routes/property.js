@@ -1,10 +1,9 @@
 const express = require("express");
-const multer = require('multer')
 const { createProperty, getProperties, getPropertyById, updateProperty, deleteProperty, getHostProperties, searchProperties, getFeaturedProperties } = require("../controllers/propertyController");
 const authMiddleware = require("../middleware/authMiddleware");
 const roleCheckMiddleware = require("../middleware/roleCheckMiddleware");
+const upload = require("../sevices/uploadConfig");
 const route = express.Router();
-const upload = multer()
 
 route.post('/create',authMiddleware,roleCheckMiddleware(['host','admin']),upload.fields([{name:'thumbnail',maxCount:1},{name:'images',maxCount:10}]),createProperty)
 route.get('/all',getProperties)

@@ -8,7 +8,9 @@ const startBookingExpiryCleanup = () => {
             const result = await bookingSchema.updateMany(
                 {
                     bookingStatus: 'pending',
-                    expiresAt: { $lt: now }
+                    // A paid booking must never be swept away by the expiry job
+                    paymentStatus: 'pending',
+                    expiresAt: { $lt: now, $ne: null }
                 },
                 {
                     $set: {
@@ -22,7 +24,7 @@ const startBookingExpiryCleanup = () => {
                 console.log(`[Expiry Cleanup] Cancelled ${result.modifiedCount} expired pending booking(s).`);
             }
         } catch (error) {
-            console.error('[Expiry Cleanup Error]', error);
+            console.log(error);
         }
     }, 60000);
 };
