@@ -19,8 +19,27 @@ const PropertyForm = ({ initialData, onSubmit, buttonText = 'Publish Property' }
     country: '',
     zipCode: '',
     category: '',
-    status: 'draft',
-    amenities: []
+    status: 'published',
+    amenities: [],
+    // ====== Rental horizons this listing is offered on
+    rentalTypes: ['short'],
+    monthlyRate: '',
+    longTermRent: '',
+    minStayNights: 1,
+    maxStayNights: 29,
+    minTermMonths: 12,
+    securityDeposit: 0,
+    utilitiesIncluded: false,
+    furnished: 'furnished',
+    discountWeekly: 0,
+    discountMonthly: 0,
+    cancellationPolicy: 'moderate',
+    taxRatePercent: 0,
+    currency: 'USD',
+    dedicatedDesk: false,
+    monitor: false,
+    internetSpeedMbps: '',
+    laundryInUnit: false
   });
 
   const [categories, setCategories] = useState([]);
@@ -69,6 +88,24 @@ const PropertyForm = ({ initialData, onSubmit, buttonText = 'Publish Property' }
         zipCode: initialData.zipCode || '',
         category: initialData.category?._id || initialData.category || '',
         status: initialData.status || 'published',
+        rentalTypes: initialData.rentalTypes?.length ? initialData.rentalTypes : ['short'],
+        monthlyRate: initialData.monthlyRate || '',
+        longTermRent: initialData.longTermRent || '',
+        minStayNights: initialData.minStayNights ?? 1,
+        maxStayNights: initialData.maxStayNights ?? 29,
+        minTermMonths: initialData.minTermMonths ?? 12,
+        securityDeposit: initialData.securityDeposit ?? 0,
+        utilitiesIncluded: initialData.utilitiesIncluded ?? false,
+        furnished: initialData.furnished || 'furnished',
+        discountWeekly: initialData.discounts?.weekly ?? 0,
+        discountMonthly: initialData.discounts?.monthly ?? 0,
+        cancellationPolicy: initialData.cancellationPolicy || 'moderate',
+        taxRatePercent: initialData.taxRatePercent ?? 0,
+        currency: initialData.currency || 'USD',
+        dedicatedDesk: initialData.workspace?.dedicatedDesk ?? false,
+        monitor: initialData.workspace?.monitor ?? false,
+        internetSpeedMbps: initialData.workspace?.internetSpeedMbps || '',
+        laundryInUnit: initialData.workspace?.laundryInUnit ?? false,
         amenities: initialData.amenities?.map(a => a._id || a) || []
       });
     }
@@ -90,6 +127,20 @@ const PropertyForm = ({ initialData, onSubmit, buttonText = 'Publish Property' }
         amenities: active 
           ? prev.amenities.filter(id => id !== amenityId)
           : [...prev.amenities, amenityId]
+      };
+    });
+  };
+
+  const handleRentalTypeToggle = (type) => {
+    setFormData(prev => {
+      const active = prev.rentalTypes.includes(type);
+      // A listing must always keep at least one horizon
+      if (active && prev.rentalTypes.length === 1) return prev;
+      return {
+        ...prev,
+        rentalTypes: active
+          ? prev.rentalTypes.filter(item => item !== type)
+          : [...prev.rentalTypes, type]
       };
     });
   };
@@ -133,6 +184,170 @@ const PropertyForm = ({ initialData, onSubmit, buttonText = 'Publish Property' }
           </select>
         </div>
       </div>
+
+      {/* ====== Rental Horizons ====== */}
+      <div className="space-y-4 border border-neutral-200 rounded p-5 bg-neutral-50/50">
+        <div>
+          <label className="block font-black uppercase text-[11px] text-neutral-800 tracking-wider">Rental Horizons</label>
+          <p className="text-[11px] text-neutral-500 font-semibold mt-1">Pick every term this property is offered on. Each one needs its own rate below.</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[
+            { id: 'short', label: 'Short-term', hint: '1-29 nights' },
+            { id: 'mid', label: 'Mid-term', hint: '1-11 months' },
+            { id: 'long', label: 'Long-term', hint: '12+ months' },
+          ].map(item => (
+            <button
+              type="button"
+              key={item.id}
+              onClick={() => handleRentalTypeToggle(item.id)}
+              className={`px-4 py-3 rounded border text-left transition-all cursor-pointer ${
+                formData.rentalTypes.includes(item.id)
+                  ? 'border-black bg-black text-white'
+                  : 'border-neutral-300 bg-white text-neutral-700 hover:border-neutral-400'
+              }`}
+            >
+              <span className="block font-black uppercase text-[11px] tracking-wider">{item.label}</span>
+              <span className="block text-[10px] opacity-70 font-bold">{item.hint}</span>
+            </button>
+          ))}
+        </div>
+
+        {formData.rentalTypes.includes('short') && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+            <div className="space-y-2">
+              <label className="block font-black uppercase text-[10px] text-neutral-600 tracking-wider">Min Nights</label>
+              <input type="number" name="minStayNights" min="1" value={formData.minStayNights} onChange={handleChange}
+                className="w-full bg-white border border-neutral-300 text-black font-semibold rounded px-3 py-2 focus:outline-none focus:border-black text-[13px]" />
+            </div>
+            <div className="space-y-2">
+              <label className="block font-black uppercase text-[10px] text-neutral-600 tracking-wider">Max Nights</label>
+              <input type="number" name="maxStayNights" min="1" value={formData.maxStayNights} onChange={handleChange}
+                className="w-full bg-white border border-neutral-300 text-black font-semibold rounded px-3 py-2 focus:outline-none focus:border-black text-[13px]" />
+            </div>
+            <div className="space-y-2">
+              <label className="block font-black uppercase text-[10px] text-neutral-600 tracking-wider">Weekly Disc %</label>
+              <input type="number" name="discountWeekly" min="0" max="90" value={formData.discountWeekly} onChange={handleChange}
+                className="w-full bg-white border border-neutral-300 text-black font-semibold rounded px-3 py-2 focus:outline-none focus:border-black text-[13px]" />
+            </div>
+            <div className="space-y-2">
+              <label className="block font-black uppercase text-[10px] text-neutral-600 tracking-wider">Monthly Disc %</label>
+              <input type="number" name="discountMonthly" min="0" max="90" value={formData.discountMonthly} onChange={handleChange}
+                className="w-full bg-white border border-neutral-300 text-black font-semibold rounded px-3 py-2 focus:outline-none focus:border-black text-[13px]" />
+            </div>
+          </div>
+        )}
+
+        {formData.rentalTypes.includes('mid') && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div className="space-y-2">
+              <label className="block font-black uppercase text-[10px] text-neutral-600 tracking-wider">Monthly Rate ($) *</label>
+              <input type="number" name="monthlyRate" min="0" value={formData.monthlyRate} onChange={handleChange} placeholder="e.g. 3200"
+                className="w-full bg-white border border-neutral-300 text-black font-semibold rounded px-3 py-2 focus:outline-none focus:border-black text-[13px]" />
+            </div>
+            <div className="space-y-2">
+              <label className="block font-black uppercase text-[10px] text-neutral-600 tracking-wider">Security Deposit ($)</label>
+              <input type="number" name="securityDeposit" min="0" value={formData.securityDeposit} onChange={handleChange}
+                className="w-full bg-white border border-neutral-300 text-black font-semibold rounded px-3 py-2 focus:outline-none focus:border-black text-[13px]" />
+            </div>
+          </div>
+        )}
+
+        {formData.rentalTypes.includes('long') && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div className="space-y-2">
+              <label className="block font-black uppercase text-[10px] text-neutral-600 tracking-wider">Monthly Rent ($) *</label>
+              <input type="number" name="longTermRent" min="0" value={formData.longTermRent} onChange={handleChange} placeholder="e.g. 2400"
+                className="w-full bg-white border border-neutral-300 text-black font-semibold rounded px-3 py-2 focus:outline-none focus:border-black text-[13px]" />
+            </div>
+            <div className="space-y-2">
+              <label className="block font-black uppercase text-[10px] text-neutral-600 tracking-wider">Min Term (months)</label>
+              <input type="number" name="minTermMonths" min="1" value={formData.minTermMonths} onChange={handleChange}
+                className="w-full bg-white border border-neutral-300 text-black font-semibold rounded px-3 py-2 focus:outline-none focus:border-black text-[13px]" />
+            </div>
+          </div>
+        )}
+
+        {(formData.rentalTypes.includes('mid') || formData.rentalTypes.includes('long')) && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div className="space-y-2">
+              <label className="block font-black uppercase text-[10px] text-neutral-600 tracking-wider">Furnishing</label>
+              <select name="furnished" value={formData.furnished} onChange={handleChange}
+                className="w-full bg-white border border-neutral-300 text-black font-bold rounded px-3 py-2 focus:outline-none focus:border-black text-[13px]">
+                <option value="furnished">Furnished</option>
+                <option value="semi">Semi-furnished</option>
+                <option value="unfurnished">Unfurnished</option>
+              </select>
+            </div>
+            <div className="flex items-end pb-2">
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input type="checkbox" name="utilitiesIncluded" checked={formData.utilitiesIncluded}
+                  onChange={(e) => setFormData(prev => ({ ...prev, utilitiesIncluded: e.target.checked }))}
+                  className="w-4 h-4 accent-black cursor-pointer" />
+                <span className="font-black uppercase text-[10px] text-neutral-600 tracking-wider">Utilities included</span>
+              </label>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ====== Policy, tax and currency ====== */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <label className="block font-black uppercase text-[11px] text-neutral-800 tracking-wider">Cancellation Policy</label>
+          <select name="cancellationPolicy" value={formData.cancellationPolicy} onChange={handleChange}
+            className="w-full bg-white border border-neutral-300 text-black font-bold rounded px-4 py-3 focus:outline-none focus:border-black text-[13px]">
+            <option value="flexible">Flexible - full refund up to 1 day before</option>
+            <option value="moderate">Moderate - full refund up to 5 days before</option>
+            <option value="strict">Strict - full refund up to 14 days before</option>
+            <option value="non_refundable">Non-refundable</option>
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="block font-black uppercase text-[11px] text-neutral-800 tracking-wider">Occupancy Tax %</label>
+          <input type="number" name="taxRatePercent" min="0" max="50" step="0.5" value={formData.taxRatePercent} onChange={handleChange}
+            className="w-full bg-white border border-neutral-300 text-black font-semibold rounded px-4 py-3 focus:outline-none focus:border-black text-[13px]" />
+        </div>
+        <div className="space-y-2">
+          <label className="block font-black uppercase text-[11px] text-neutral-800 tracking-wider">Currency</label>
+          <select name="currency" value={formData.currency} onChange={handleChange}
+            className="w-full bg-white border border-neutral-300 text-black font-bold rounded px-4 py-3 focus:outline-none focus:border-black text-[13px]">
+            {['USD','EUR','GBP','BDT','AED','INR','CAD','AUD','SGD','JPY'].map(code => (
+              <option key={code} value={code}>{code}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* ====== Workspace - what decides a multi month stay ====== */}
+      {(formData.rentalTypes.includes('mid') || formData.rentalTypes.includes('long')) && (
+        <div className="space-y-4 border border-neutral-200 rounded p-5 bg-neutral-50/50">
+          <div>
+            <label className="block font-black uppercase text-[11px] text-neutral-800 tracking-wider">Workspace</label>
+            <p className="text-[11px] text-neutral-500 font-semibold mt-1">Remote workers filter on these before anything else.</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[
+              { name: 'dedicatedDesk', label: 'Dedicated desk' },
+              { name: 'monitor', label: 'Monitor' },
+              { name: 'laundryInUnit', label: 'Laundry in unit' },
+            ].map(item => (
+              <label key={item.name} className="flex items-center gap-2.5 cursor-pointer">
+                <input type="checkbox" checked={formData[item.name]}
+                  onChange={(e) => setFormData(prev => ({ ...prev, [item.name]: e.target.checked }))}
+                  className="w-4 h-4 accent-black cursor-pointer" />
+                <span className="font-black uppercase text-[10px] text-neutral-600 tracking-wider">{item.label}</span>
+              </label>
+            ))}
+            <div className="space-y-1.5">
+              <label className="block font-black uppercase text-[10px] text-neutral-600 tracking-wider">Wifi Mbps</label>
+              <input type="number" name="internetSpeedMbps" min="0" value={formData.internetSpeedMbps} onChange={handleChange}
+                className="w-full bg-white border border-neutral-300 text-black font-semibold rounded px-3 py-2 focus:outline-none focus:border-black text-[13px]" />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Description */}
       <div className="space-y-2">
