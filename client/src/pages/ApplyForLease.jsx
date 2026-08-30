@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import toast from "react-hot-toast";
 import { useGetPropertyByIdQuery } from "../store/api/propertyApi";
 import { useGetLeaseQuoteQuery } from "../store/api/leaseApi";
 import { useCreateApplicationMutation } from "../store/api/applicationApi";
 import { HiOutlineHome, HiOutlineShieldCheck } from "react-icons/hi";
+import { useGetAvailabilityQuery } from "../store/api/bookingApi";
+import BookingCalendar from "../components/BookingCalendar";
 
 const EMPLOYMENT = ["employed", "self-employed", "student", "retired", "unemployed"];
 
@@ -39,6 +41,24 @@ const ApplyForLease = () => {
   const quote = quoteData?.quote;
 
   const [createApplication, { isLoading }] = useCreateApplicationMutation();
+
+  // ====== Dates already taken by a booking, a lease or a host block
+  const { data: availData } = useGetAvailabilityQuery(id, { skip: !id });
+  const unavailableDates = useMemo(() => {
+    if (!availData?.data) return [];
+    const dates = [];
+    for (const item of availData.data) {
+      const cursor = new Date(item.checkInDate);
+      const end = new Date(item.checkOutDate);
+      while (cursor < end) {
+        const month = `${cursor.getMonth() + 1}`.padStart(2, "0");
+        const day = `${cursor.getDate()}`.padStart(2, "0");
+        dates.push(`${cursor.getFullYear()}-${month}-${day}`);
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    }
+    return dates;
+  }, [availData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -138,15 +158,20 @@ const ApplyForLease = () => {
             </div>
           </div>
 
+          {/* ====== Move-in date ====== */}
+          <BookingCalendar
+            label="Pick your move-in date"
+            value={form.desiredMoveIn}
+            onChange={(dateStr) => setForm((prev) => ({ ...prev, desiredMoveIn: dateStr }))}
+            unavailableDates={unavailableDates}
+            minDate={property.availableFrom ? String(property.availableFrom).slice(0, 10) : undefined}
+          />
+
           {/* ====== Term ====== */}
           <div className="bg-white border border-gray-100 shadow-sm rounded-3xl p-6 space-y-4">
             <h3 className="font-bold text-gray-800 text-sm">The tenancy you want</h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className={labelClass}>Move-in date *</label>
-                <input type="date" name="desiredMoveIn" value={form.desiredMoveIn} onChange={handleChange} className={inputClass} />
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={labelClass}>Term (months)</label>
                 <input type="number" name="desiredTermMonths" min="1" value={form.desiredTermMonths} onChange={handleChange} className={inputClass} />
