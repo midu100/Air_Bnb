@@ -1,6 +1,9 @@
 const paymentSchema = require("../models/paymentSchema")
 const bookingSchema = require("../models/bookingSchema")
+const propertySchema = require("../models/propertySchema")
 const getStripe = require("../sevices/stripeConfig")
+const { refundForCancellation } = require("../sevices/pricingEngine")
+const { refundBookingPayment, cancelInstallmentsFor } = require("../sevices/refundService")
 const { schedulePayoutForBooking } = require("./payoutController")
 
 // ====== Create Checkout Session - hands the guest a Stripe hosted payment page
@@ -186,33 +189,44 @@ const refundPayment = async(req,res)=>{
 
         if(payment.status !== 'paid') return res.status(400).send({message : 'Only paid payments can be refunded'})
 
-        // ========= refund at the gateway first =========
-        const stripe = getStripe()
-        if(stripe && payment.paymentMethod === 'stripe' && payment.transactionId){
-            try {
-                await stripe.refunds.create({payment_intent : payment.transactionId})
-            } catch (err) {
-                console.log(err)
-                return res.status(400).send({message : 'Gateway refused the refund. Please contact support.'})
-            }
-        }
-
-        // ========= update payment status =========
-        payment.status = 'refunded'
-        await payment.save()
-
-        // ========= update booking payment status =========
         const booking = await bookingSchema.findById(payment.booking)
-        if(booking){
-            booking.paymentStatus = 'refunded'
-            booking.bookingStatus = 'cancelled'
-            await booking.save()
+        if(!booking) return res.status(404).send({message : 'Booking not found'})
+
+        // ========= the policy decides how much, not the caller =========
+        // Refunding here used to send the whole charge back with no policy applied,
+        // so a guest could skip /booking/cancel and get everything regardless of
+        // how little notice they had given.
+        const property = await propertySchema.findById(booking.property)
+        const refund = refundForCancellation(booking, property)
+
+        if(refund.refundAmount <= 0){
+            return res.status(400).send({
+                message : `This ${refund.policy} policy returns nothing at ${refund.daysBeforeCheckIn} day(s) notice. Cancel the booking if you no longer need it.`,
+                refund,
+            })
         }
+
+        const outcome = await refundBookingPayment(booking, refund.refundAmount)
+        if(!outcome.refunded) return res.status(400).send({message : outcome.reason || 'The refund could not be sent'})
+
+        // ========= the stay is over once the money goes back =========
+        booking.bookingStatus = 'cancelled'
+        booking.refundAmount = outcome.amount
+        if(outcome.amount >= booking.totalAmount) booking.paymentStatus = 'refunded'
+        await booking.save()
+
+        await cancelInstallmentsFor(booking._id)
+
+        const updatedPayment = await paymentSchema.findById(id)
 
         // ========= successfull =========
-        res.status(200).send({message : 'Payment refunded.',payment})
+        res.status(200).send({
+            message : `Refunded $${outcome.amount} under the ${refund.policy} policy (${refund.refundPercent}% at ${refund.daysBeforeCheckIn} day(s) notice).`,
+            payment : updatedPayment,
+            refund : { ...refund, refundedAmount : outcome.amount },
+        })
 
-    } 
+    }
     catch (error) {
       console.log(error)
       res.status(500).send({message : 'Internal server error'})

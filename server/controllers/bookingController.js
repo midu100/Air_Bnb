@@ -7,6 +7,7 @@ const availabilitySchema = require("../models/availabilitySchema")
 const installmentSchema = require("../models/installmentSchema")
 const pricingRuleSchema = require("../models/pricingRuleSchema")
 const { quoteStay, validateStay, refundForCancellation } = require("../sevices/pricingEngine")
+const { refundBookingPayment, cancelInstallmentsFor } = require("../sevices/refundService")
 
 // Matches any booking that still holds the dates - confirmed, or pending inside its payment window
 const activeBookingFilter = () => ({
@@ -283,25 +284,38 @@ const cancelBooking = async(req,res)=>{
         // ========= what comes back depends on the policy and the notice given =========
         const property = await propertySchema.findById(booking.property)
         const refund = refundForCancellation(booking, property)
+        const wasPaid = booking.paymentStatus === 'paid'
 
         booking.bookingStatus = 'cancelled'
-        booking.refundAmount = booking.paymentStatus === 'paid' ? refund.refundAmount : 0
+
+        // ========= send the money back, do not merely promise it =========
+        // This used to compute the refund, tell the guest it was coming, and never
+        // call the gateway. It also left the host's scheduled payout in place.
+        let outcome = { refunded: false, amount: 0, reason: null }
+        if (wasPaid) {
+            outcome = await refundBookingPayment(booking, refund.refundAmount)
+            booking.refundAmount = outcome.amount
+            if (outcome.refunded) {
+                booking.paymentStatus = outcome.amount >= booking.totalAmount ? 'refunded' : 'paid'
+            }
+        }
+
         await booking.save()
 
         // Nothing further should ever be charged on a cancelled stay
-        await installmentSchema.updateMany(
-            {booking : booking._id,status : {$in : ['upcoming','due','failed']}},
-            {$set : {status : 'cancelled'}}
-        )
+        await cancelInstallmentsFor(booking._id)
 
         // ========= successfull =========
-        res.status(200).send({
-            message : booking.paymentStatus === 'paid'
-                ? `Booking cancelled. ${refund.refundPercent}% refundable - $${refund.refundAmount} will be returned.`
-                : 'Booking cancelled.',
-            booking,
-            refund,
-        })
+        let message = 'Booking cancelled.'
+        if (wasPaid && outcome.refunded) {
+            message = `Booking cancelled. ${refund.refundPercent}% refundable - $${outcome.amount} has been returned.`
+        } else if (wasPaid && refund.refundAmount <= 0) {
+            message = `Booking cancelled. This ${refund.policy} policy returns nothing at ${refund.daysBeforeCheckIn} day(s) notice.`
+        } else if (wasPaid) {
+            message = `Booking cancelled, but the refund could not be sent: ${outcome.reason}. Please contact support.`
+        }
+
+        res.status(200).send({ message, booking, refund: { ...refund, refundedAmount: outcome.amount, sent: outcome.refunded } })
 
     } 
     catch (error) {

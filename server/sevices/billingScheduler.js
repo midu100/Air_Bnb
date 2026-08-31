@@ -17,6 +17,19 @@ const releaseDuePayouts = async () => {
 
     for (const payout of due) {
         try {
+            // A booking cancelled after its payout was scheduled must not still pay out.
+            // reversePayoutsFor already handles the normal path; this is the net
+            // underneath it, so a missed reversal cannot quietly send money.
+            if (payout.booking) {
+                const booking = await bookingSchema.findById(payout.booking);
+                if (!booking || booking.bookingStatus === 'cancelled' || ['refunded', 'failed'].includes(booking.paymentStatus)) {
+                    payout.status = 'reversed';
+                    payout.failureReason = 'Booking is cancelled or refunded';
+                    await payout.save();
+                    continue;
+                }
+            }
+
             const host = await userSchema.findById(payout.host);
 
             // Without a verified Connect account there is nowhere to send it

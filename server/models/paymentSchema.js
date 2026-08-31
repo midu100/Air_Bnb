@@ -47,8 +47,19 @@ const paymentSchema = new mongoose.Schema(
         "paid",
         "failed",
         "refunded",
+        "partially_refunded",
       ],
       default: "pending",
+    },
+
+    // A cancellation policy often returns only part of what was taken
+    refundedAmount: {
+      type: Number,
+      default: 0,
+    },
+
+    refundedAt: {
+      type: Date,
     },
   },
   {
