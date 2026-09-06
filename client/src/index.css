@@ -7,6 +7,21 @@
   --color-brand: #f0506e;
   --color-brand-dark: #e03858;
   --color-brand-light: #fce4ec;
+
+  /* ===== Premium palette =====
+     Deep green-black ground, warm ivory type, brass as the single accent. */
+  --color-ink: #0e1918;
+  --color-ink-soft: #14211f;
+  --color-ink-line: #263432;
+  --color-ivory: #f6f1e7;
+  --color-ivory-soft: #ece3d3;
+  --color-brass: #c2a05c;
+  --color-brass-soft: #dcc08a;
+  --color-brown: #3b2a20;
+  --color-tan: #c8a783;
+
+  --font-serif: 'Cormorant Garamond', ui-serif, Georgia, serif;
+  --font-body: 'Jost', ui-sans-serif, system-ui, sans-serif;
   
   --animate-fade-in-up: fade-in-up 0.6s ease-out forwards;
   --animate-fade-in: fade-in 0.4s ease-out forwards;
@@ -36,6 +51,29 @@
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-10px); }
   }
+}
+
+/* ===== Premium marks ===== */
+@utility eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  font-weight: 400;
+}
+
+/* Film grain over dark sections, so a flat fill reads as a surface */
+.grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection {
+  background-color: var(--color-brass);
+  color: var(--color-ink);
 }
 
 /* Base */
