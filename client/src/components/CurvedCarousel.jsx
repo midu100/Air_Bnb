@@ -102,7 +102,7 @@ const CurvedCarousel = ({ properties = [], rentalType = 'short' }) => {
                 <Link
                   to={`/property/${property._id || property.id}`}
                   tabIndex={isActive ? 0 : -1}
-                  className="group block overflow-hidden rounded-[28px] border border-ink-line bg-ink-soft transition-colors duration-500 hover:border-brass/50"
+                  className="group block overflow-hidden rounded-[28px] border border-espresso-line bg-linen transition-colors duration-500 hover:border-bronze/50"
                 >
                   <div className="relative aspect-[4/5] overflow-hidden">
                     <img
@@ -114,12 +114,12 @@ const CurvedCarousel = ({ properties = [], rentalType = 'short' }) => {
                     <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/10 to-transparent" />
 
                     <div className="absolute inset-x-0 bottom-0 p-6">
-                      <p className="eyebrow text-brass">{property.city}</p>
-                      <h3 className="mt-2 font-serif text-[24px] font-light leading-tight text-ivory">
+                      <p className="eyebrow text-bronze">{property.city}</p>
+                      <h3 className="mt-2 font-serif text-[24px] font-light leading-tight text-espresso">
                         {property.title}
                       </h3>
-                      <p className="mt-2 text-[13px] text-ivory/60">
-                        <span className="text-ivory">${price.toLocaleString()}</span> / {mode.unit}
+                      <p className="mt-2 text-[13px] text-espresso-soft/80">
+                        <span className="text-espresso">${price.toLocaleString()}</span> / {mode.unit}
                       </p>
                     </div>
                   </div>
@@ -135,7 +135,7 @@ const CurvedCarousel = ({ properties = [], rentalType = 'short' }) => {
         <button
           onClick={() => step(-1)}
           aria-label="Previous home"
-          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-ivory/20 bg-transparent text-ivory/70 transition-all duration-300 hover:border-brass hover:text-brass"
+          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-espresso-line bg-transparent text-espresso-soft transition-all duration-300 hover:border-bronze hover:text-bronze"
         >
           <HiOutlineArrowLeft className="h-4 w-4" />
         </button>
@@ -148,7 +148,7 @@ const CurvedCarousel = ({ properties = [], rentalType = 'short' }) => {
               aria-label={`Go to ${property.title}`}
               aria-current={index === current}
               className={`h-1 cursor-pointer rounded-full border-none transition-all duration-500 ${
-                index === current ? 'w-8 bg-brass' : 'w-3 bg-ivory/25 hover:bg-ivory/50'
+                index === current ? 'w-8 bg-bronze' : 'w-3 bg-espresso/20 hover:bg-ivory/50'
               }`}
             />
           ))}
@@ -157,13 +157,13 @@ const CurvedCarousel = ({ properties = [], rentalType = 'short' }) => {
         <button
           onClick={() => step(1)}
           aria-label="Next home"
-          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-ivory/20 bg-transparent text-ivory/70 transition-all duration-300 hover:border-brass hover:text-brass"
+          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-espresso-line bg-transparent text-espresso-soft transition-all duration-300 hover:border-bronze hover:text-bronze"
         >
           <HiOutlineArrowRight className="h-4 w-4" />
         </button>
       </div>
 
-      <p className="mt-4 text-center text-[11px] text-ivory/30">
+      <p className="mt-4 text-center text-[11px] text-espresso-soft/45">
         Drag, swipe, or use the arrow keys
       </p>
     </div>

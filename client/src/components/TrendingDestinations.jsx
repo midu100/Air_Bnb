@@ -12,7 +12,8 @@ const DESTINATIONS = [
     id: 2,
     city: 'Dhaka',
     flag: '🇧🇩',
-    image: 'https://images.unsplash.com/photo-1617817547332-e62e3a7b0861?w=800&h=500&fit=crop&q=80',
+    // Public domain skyline, kept locally so the card cannot 404 again
+    image: '/destinations/dhaka.jpg',
     properties: '980'
   },
   {
@@ -45,15 +46,25 @@ const DESTINATIONS = [
   }
 ]
 
+// A destination that loses its photograph should still look like a place worth
+// going, not an empty grey panel in the middle of the grid
+const FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=800&h=500&fit=crop&q=80'
+
+const handleImageError = (event) => {
+  if (event.target.src === FALLBACK_IMAGE) return
+  event.target.src = FALLBACK_IMAGE
+}
+
 const TrendingDestinations = () => {
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 font-sans">
       {/* Section Header */}
       <div className="mb-6">
-        <h2 className="text-3xl font-serif font-bold text-ivory tracking-tight">
+        <h2 className="text-3xl font-serif font-bold text-espresso tracking-tight">
           Trending destinations
         </h2>
-        <p className="text-sm text-ivory/40 mt-1">
+        <p className="text-sm text-espresso-soft/55 mt-1">
           Most popular choices for travelers from Bangladesh
         </p>
       </div>
@@ -68,6 +79,7 @@ const TrendingDestinations = () => {
             <img
               src={dest.image}
               alt={dest.city}
+              onError={handleImageError}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
             {/* Overlay gradient */}
@@ -82,7 +94,7 @@ const TrendingDestinations = () => {
 
             {/* Property count badge */}
             <div className="absolute bottom-5 left-5 z-10">
-              <span className="bg-ink-soft/90 backdrop-blur-sm text-ivory text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+              <span className="bg-linen/90 backdrop-blur-sm text-espresso text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
                 {dest.properties} properties
               </span>
             </div>
@@ -100,6 +112,7 @@ const TrendingDestinations = () => {
             <img
               src={dest.image}
               alt={dest.city}
+              onError={handleImageError}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
             {/* Overlay gradient */}
@@ -114,7 +127,7 @@ const TrendingDestinations = () => {
 
             {/* Property count badge */}
             <div className="absolute bottom-4 left-4 z-10">
-              <span className="bg-ink-soft/90 backdrop-blur-sm text-ivory text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+              <span className="bg-linen/90 backdrop-blur-sm text-espresso text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
                 {dest.properties} properties
               </span>
             </div>

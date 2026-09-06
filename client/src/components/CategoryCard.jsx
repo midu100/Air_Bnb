@@ -10,7 +10,7 @@ const CategoryCard = ({ category, isActive, onClick }) => {
     >
       {/* Image Container */}
       <div className={`relative w-full h-[180px] md:h-[200px] rounded-xl overflow-hidden transition-all duration-300 ${
-        isActive ? 'ring-2 ring-[#f0506e] ring-offset-2' : ''
+        isActive ? 'ring-2 ring-bronze ring-offset-2 ring-offset-cream' : ''
       }`}>
         <img
           src={image}
@@ -22,7 +22,7 @@ const CategoryCard = ({ category, isActive, onClick }) => {
         
         {/* Count badge */}
         {count && (
-          <div className="absolute top-3 right-3 bg-ink-soft/90 backdrop-blur-sm text-ivory/80 text-[10px] font-bold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 shadow-sm">
+          <div className="absolute top-3 right-3 bg-linen/90 backdrop-blur-sm text-espresso-soft text-[10px] font-bold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 shadow-sm">
             {count} properties
           </div>
         )}
@@ -30,7 +30,7 @@ const CategoryCard = ({ category, isActive, onClick }) => {
 
       {/* Label */}
       <h3 className={`mt-2.5 text-sm font-bold transition-colors duration-200 ${
-        isActive ? 'text-brass' : 'text-ivory group-hover:text-brass'
+        isActive ? 'text-bronze' : 'text-espresso group-hover:text-bronze'
       }`}>
         {name}
       </h3>

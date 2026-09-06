@@ -41,12 +41,12 @@ const ChatButton = () => {
       {isOpen && (
         <div className="bg-white w-80 md:w-96 h-[480px] rounded-2xl shadow-2xl mb-4 overflow-hidden flex flex-col animate-fade-in border border-gray-100">
           {/* Header */}
-          <div className="bg-gradient-to-r from-rose-500 to-pink-600 px-4 py-3 flex items-center justify-between">
+          <div className="bg-espresso px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse"></div>
               <div>
                 <h3 className="font-semibold text-white text-sm">Host & Support Chat</h3>
-                <span className="text-[10px] text-rose-100">Active now</span>
+                <span className="text-[10px] text-linen/60">Active now</span>
               </div>
             </div>
             <button
@@ -71,7 +71,7 @@ const ChatButton = () => {
                 <div
                   className={`px-3 py-2 rounded-2xl text-xs ${
                     msg.sender === 'user'
-                      ? 'bg-rose-500 text-white rounded-br-none'
+                      ? 'bg-bronze text-linen rounded-br-none'
                       : 'bg-white text-gray-800 rounded-bl-none border border-gray-100 shadow-xs'
                   }`}
                 >
@@ -89,11 +89,11 @@ const ChatButton = () => {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder="Type your message..."
-              className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-850 placeholder-gray-400 focus:outline-none focus:bg-white focus:border-rose-500/80 transition-all"
+              className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-850 placeholder-gray-400 focus:outline-none focus:bg-white focus:border-bronze/80 transition-all"
             />
             <button
               type="submit"
-              className="bg-rose-500 hover:bg-rose-600 text-white p-2 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+              className="bg-bronze hover:bg-bronze-soft text-linen p-2 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
@@ -106,7 +106,7 @@ const ChatButton = () => {
       {/* Floating Action Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 bg-gradient-to-tr from-rose-500 to-pink-600 rounded-full flex items-center justify-center shadow-lg cursor-pointer transition-transform duration-300 hover:scale-110 active:scale-95 text-white border border-rose-400/20 group relative"
+        className="w-14 h-14 bg-bronze hover:bg-bronze-soft rounded-full flex items-center justify-center shadow-lg cursor-pointer transition-transform duration-300 hover:scale-110 active:scale-95 text-linen border border-bronze-soft/30 group relative"
       >
         {isOpen ? (
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

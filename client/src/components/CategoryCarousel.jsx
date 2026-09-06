@@ -3,6 +3,9 @@ import CategoryCard from './CategoryCard'
 import CommonHead from './common/CommonHead'
 import { useGetCategoriesQuery } from '../store/api/categoryApi'
 
+const FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&h=450&fit=crop&q=80'
+
 const CATEGORIES = [
   {
     id: 'cabins',
@@ -70,11 +73,18 @@ const CategoryCarousel = ({ activeCategory, onSelectCategory }) => {
   const { data: dbData } = useGetCategoriesQuery()
   const dbCategories = dbData?.category || []
 
+  // A category with no image of its own used to fall back to one shared photo,
+  // so every tile in the row showed the same hotel bedroom. Borrow the picture
+  // that belongs to the category of that name instead.
+  const imageForName = (name) =>
+    CATEGORIES.find((cat) => cat.name.toLowerCase() === String(name).toLowerCase())?.image ||
+    FALLBACK_IMAGE
+
   // Combine database categories with default mock categories (avoiding duplicates by name)
   const displayedCategories = [...dbCategories.map(c => ({
     id: c._id,
     name: c.name,
-    image: c.image || 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=600&h=450&fit=crop&q=80',
+    image: c.image || imageForName(c.name),
     count: '',
     description: c.description || ''
   }))]
@@ -125,8 +135,8 @@ const CategoryCarousel = ({ activeCategory, onSelectCategory }) => {
             disabled={!canScrollLeft}
             className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-sm active:scale-95 ${
               canScrollLeft
-                ? 'bg-ink-soft border-ink-line text-ivory/65 hover:text-ivory hover:border-gray-300 hover:shadow-md'
-                : 'bg-ink border-ink-line text-gray-200 cursor-not-allowed'
+                ? 'bg-linen border-espresso-line text-espresso-soft hover:text-espresso hover:border-gray-300 hover:shadow-md'
+                : 'bg-cream border-espresso-line text-gray-200 cursor-not-allowed'
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -138,8 +148,8 @@ const CategoryCarousel = ({ activeCategory, onSelectCategory }) => {
             disabled={!canScrollRight}
             className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-sm active:scale-95 ${
               canScrollRight
-                ? 'bg-ink-soft border-ink-line text-ivory/65 hover:text-ivory hover:border-gray-300 hover:shadow-md'
-                : 'bg-ink border-ink-line text-gray-200 cursor-not-allowed'
+                ? 'bg-linen border-espresso-line text-espresso-soft hover:text-espresso hover:border-gray-300 hover:shadow-md'
+                : 'bg-cream border-espresso-line text-gray-200 cursor-not-allowed'
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
