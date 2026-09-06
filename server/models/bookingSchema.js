@@ -124,6 +124,19 @@ const bookingSchema = new mongoose.Schema(
       default: 0,
     },
 
+    // ====== Discount code applied at checkout
+    coupon: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "coupon",
+    },
+
+    couponCode: String,
+
+    couponDiscount: {
+      type: Number,
+      default: 0,
+    },
+
     // Snapshotted at booking time so a later policy change cannot alter this deal
     cancellationPolicy: {
       type: String,

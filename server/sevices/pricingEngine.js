@@ -75,7 +75,7 @@ const nightlyDiscountPercent = (property, nights) => {
 }
 
 // ====== Short term - pay the whole stay up front
-const quoteShortTerm = (property, checkIn, checkOut, rules = []) => {
+const quoteShortTerm = (property, checkIn, checkOut, rules = [], coupon = null) => {
     const nights = nightsBetween(checkIn, checkOut)
 
     // Price night by night so a weekend or a season shows up in the total
@@ -95,7 +95,9 @@ const quoteShortTerm = (property, checkIn, checkOut, rules = []) => {
     const cleaningFee = property.cleaningFee || 0
     const serviceFee = property.serviceFee || 0
 
-    const taxable = round2(gross - discountAmount + cleaningFee)
+    // A coupon comes off before tax, so the guest is not taxed on money they never paid
+    const couponDiscount = coupon?.discount || 0
+    const taxable = round2(Math.max(0, gross - discountAmount - couponDiscount + cleaningFee))
     const taxRatePercent = property.taxRatePercent || 0
     const taxAmount = round2(taxable * (taxRatePercent / 100))
 
@@ -113,6 +115,9 @@ const quoteShortTerm = (property, checkIn, checkOut, rules = []) => {
         monthlyRate: null,
         discountPercent,
         discountAmount,
+        couponCode: coupon?.coupon?.code || null,
+        couponDiscount,
+        couponLabel: coupon?.label || null,
         cleaningFee,
         serviceFee,
         taxRatePercent,
@@ -127,7 +132,7 @@ const quoteShortTerm = (property, checkIn, checkOut, rules = []) => {
 }
 
 // ====== Mid term - first month and deposit now, the rest charged monthly
-const quoteMidTerm = (property, checkIn, checkOut, rules = []) => {
+const quoteMidTerm = (property, checkIn, checkOut, rules = [], coupon = null) => {
     const nights = nightsBetween(checkIn, checkOut)
     const { months, extraDays } = splitTerm(checkIn, checkOut)
 
@@ -147,7 +152,9 @@ const quoteMidTerm = (property, checkIn, checkOut, rules = []) => {
     const serviceFee = property.serviceFee || 0
     const securityDeposit = property.securityDeposit || 0
 
-    const taxable = round2(gross + cleaningFee)
+    // A coupon comes off before tax, so the guest is not taxed on money they never paid
+    const couponDiscount = coupon?.discount || 0
+    const taxable = round2(Math.max(0, gross - couponDiscount + cleaningFee))
     const taxRatePercent = property.taxRatePercent || 0
     const taxAmount = round2(taxable * (taxRatePercent / 100))
     const totalAmount = round2(taxable + serviceFee + taxAmount)
@@ -167,8 +174,9 @@ const quoteMidTerm = (property, checkIn, checkOut, rules = []) => {
         schedule.push({ dueDate, amount: proratedAmount, prorated: true, days: extraDays })
     }
 
+    // The discount lands on the first charge, which is the one paid at checkout
     const firstCharge = months > 0 ? monthlyRate : proratedAmount
-    const dueNow = round2(firstCharge + cleaningFee + serviceFee + taxAmount + securityDeposit)
+    const dueNow = round2(Math.max(0, firstCharge - couponDiscount) + cleaningFee + serviceFee + taxAmount + securityDeposit)
 
     return {
         rentalType: 'mid',
@@ -182,6 +190,9 @@ const quoteMidTerm = (property, checkIn, checkOut, rules = []) => {
         proratedAmount,
         discountPercent: 0,
         discountAmount: 0,
+        couponCode: coupon?.coupon?.code || null,
+        couponDiscount,
+        couponLabel: coupon?.label || null,
         cleaningFee,
         serviceFee,
         taxRatePercent,
@@ -288,10 +299,10 @@ const validateStay = (property, rentalType, checkIn, checkOut) => {
     return null
 }
 
-const quoteStay = (property, rentalType, checkIn, checkOut, rules = []) => {
+const quoteStay = (property, rentalType, checkIn, checkOut, rules = [], coupon = null) => {
     return rentalType === 'mid'
-        ? quoteMidTerm(property, checkIn, checkOut, rules)
-        : quoteShortTerm(property, checkIn, checkOut, rules)
+        ? quoteMidTerm(property, checkIn, checkOut, rules, coupon)
+        : quoteShortTerm(property, checkIn, checkOut, rules, coupon)
 }
 
 module.exports = {

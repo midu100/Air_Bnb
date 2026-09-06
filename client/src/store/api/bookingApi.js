@@ -15,6 +15,7 @@ export const bookingApi = apiSlice.injectEndpoints({
         url: "/booking/quote",
         params,
       }),
+      // A rejected code must not blank the price, the quote still comes back
       providesTags: ["Booking"],
     }),
     getCancellationPreview: builder.query({

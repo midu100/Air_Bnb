@@ -8,6 +8,7 @@ const installmentSchema = require("../models/installmentSchema")
 const pricingRuleSchema = require("../models/pricingRuleSchema")
 const { quoteStay, validateStay, refundForCancellation } = require("../sevices/pricingEngine")
 const { refundBookingPayment, cancelInstallmentsFor } = require("../sevices/refundService")
+const { evaluateCoupon, redeemCoupon, releaseCoupon } = require("../sevices/couponService")
 
 // Matches any booking that still holds the dates - confirmed, or pending inside its payment window
 const activeBookingFilter = () => ({
@@ -19,7 +20,7 @@ const activeBookingFilter = () => ({
 
 const createBooking = async(req,res)=>{
     try {
-        const{propertyId,checkInDate,checkOutDate,guestsCount,rentalType = 'short',payer = 'guest',company} = req.body
+        const{propertyId,checkInDate,checkOutDate,guestsCount,rentalType = 'short',payer = 'guest',company,couponCode} = req.body
 
         if(!propertyId) return res.status(400).send({message : 'Property id is required'})
         if(!checkInDate) return res.status(400).send({message : 'Check-in date is required'})
@@ -64,7 +65,22 @@ const createBooking = async(req,res)=>{
 
         // ========= 4. price it through the engine, applying any seasonal rules =========
         const rules = await pricingRuleSchema.find({property : propertyId, isActive : true})
-        const quote = quoteStay(property, rentalType, checkIn, checkOut, rules)
+        let quote = quoteStay(property, rentalType, checkIn, checkOut, rules)
+
+        // ========= 4b. re-check the coupon here, never trust a client-side price =========
+        let couponResult = null
+        if(couponCode){
+            couponResult = await evaluateCoupon({
+                code : couponCode,
+                userId : req.user._id,
+                property,
+                rentalType,
+                nights : quote.nights,
+                amount : quote.totalAmount,
+            })
+            if(!couponResult.ok) return res.status(400).send({message : couponResult.reason})
+            quote = quoteStay(property, rentalType, checkIn, checkOut, rules, couponResult)
+        }
 
         // ========= 5. create booking =========
         const booking = await bookingSchema.create({
@@ -83,6 +99,9 @@ const createBooking = async(req,res)=>{
             cleaningFee : quote.cleaningFee,
             serviceFee : quote.serviceFee,
             taxAmount : quote.taxAmount,
+            coupon : couponResult?.coupon?._id,
+            couponCode : quote.couponCode,
+            couponDiscount : quote.couponDiscount || 0,
             securityDeposit : quote.securityDeposit,
             cancellationPolicy : quote.cancellationPolicy,
             billingCycle : quote.billingCycle,
@@ -115,6 +134,9 @@ const createBooking = async(req,res)=>{
             await bookingSchema.findByIdAndDelete(booking._id)
             return res.status(400).send({message : 'Property is already booked for these dates'})
         }
+
+        // ========= 6b. count the redemption, now the booking is certain =========
+        if(couponResult?.ok) await redeemCoupon(couponResult.coupon._id)
 
         // ========= 7. lay out the monthly installments =========
         // The first month is settled at checkout, so the schedule covers what comes after
@@ -163,7 +185,7 @@ const createBooking = async(req,res)=>{
 // ====== Quote a stay without creating anything
 const getQuote = async(req,res)=>{
     try {
-        const{propertyId,checkInDate,checkOutDate,rentalType = 'short'} = req.query
+        const{propertyId,checkInDate,checkOutDate,rentalType = 'short',couponCode} = req.query
 
         if(!propertyId) return res.status(400).send({message : 'Property id is required'})
         if(!checkInDate) return res.status(400).send({message : 'Check-in date is required'})
@@ -181,10 +203,25 @@ const getQuote = async(req,res)=>{
         if(stayError) return res.status(400).send({message : stayError})
 
         const rules = await pricingRuleSchema.find({property : propertyId, isActive : true})
-        const quote = quoteStay(property, rentalType, checkIn, checkOut, rules)
+        let quote = quoteStay(property, rentalType, checkIn, checkOut, rules)
+
+        // A bad code must not break the quote, it just does not apply
+        let couponError = null
+        if(couponCode){
+            const result = await evaluateCoupon({
+                code : couponCode,
+                userId : req.user?._id,
+                property,
+                rentalType,
+                nights : quote.nights,
+                amount : quote.totalAmount,
+            })
+            if(result.ok) quote = quoteStay(property, rentalType, checkIn, checkOut, rules, result)
+            else couponError = result.reason
+        }
 
         // =========== success ==========
-        res.status(200).send({message : 'success',quote})
+        res.status(200).send({message : 'success',quote,couponError})
     }
     catch (error) {
        console.log(error)
@@ -304,6 +341,9 @@ const cancelBooking = async(req,res)=>{
 
         // Nothing further should ever be charged on a cancelled stay
         await cancelInstallmentsFor(booking._id)
+
+        // The code becomes usable again
+        if(booking.coupon) await releaseCoupon(booking.coupon)
 
         // ========= successfull =========
         let message = 'Booking cancelled.'

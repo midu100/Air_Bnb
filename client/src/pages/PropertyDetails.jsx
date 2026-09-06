@@ -122,6 +122,8 @@ const PropertyDetails = () => {
   const [rentalType, setRentalType] = useState('short')
   const [guestsCount, setGuestsCount] = useState(1)
   const [createBooking, { isLoading: isBooking }] = useCreateBookingMutation()
+  const [couponInput, setCouponInput] = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState('')
 
   const HORIZON_LABELS = [
     { id: 'short', label: 'Nightly', hint: '1-29 nights' },
@@ -159,11 +161,13 @@ const PropertyDetails = () => {
 
   // ====== The server prices the stay, so seasonal rules, discounts and tax all apply
   const { data: quoteData, isFetching: quoteLoading, error: quoteError } = useGetQuoteQuery(
-    { propertyId: id, rentalType, checkInDate, checkOutDate },
+    { propertyId: id, rentalType, checkInDate, checkOutDate, ...(appliedCoupon ? { couponCode: appliedCoupon } : {}) },
     { skip: !apiProperty || !checkInDate || !checkOutDate }
   )
   const quote = quoteData?.quote || null
   const quoteMessage = quoteError?.data?.message || null
+  // The server prices the stay either way and reports separately why a code was refused
+  const couponError = quoteData?.couponError || null
 
   // Compute unavailable date strings from availability API data
   const unavailableDates = useMemo(() => {
@@ -308,6 +312,7 @@ const PropertyDetails = () => {
         checkOutDate,
         guestsCount: guestsCount,
         rentalType,
+        ...(quote.couponCode ? { couponCode: quote.couponCode } : {}),
       }).unwrap()
 
       setIsError(false)
@@ -1062,6 +1067,48 @@ const PropertyDetails = () => {
                   </div>
                 )}
 
+                {/* ====== Coupon ====== */}
+                {checkInDate && checkOutDate && (
+                  <div className="space-y-2">
+                    <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider">
+                      Coupon code
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponInput}
+                        onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                        placeholder="e.g. WELCOME20"
+                        className="flex-1 bg-gray-50 border border-gray-150 rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-gray-800 placeholder-gray-400 focus:outline-none focus:border-rose-400 focus:bg-white transition-colors uppercase"
+                      />
+                      {appliedCoupon ? (
+                        <button
+                          onClick={() => { setAppliedCoupon(''); setCouponInput('') }}
+                          className="px-4 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer bg-transparent"
+                        >
+                          Remove
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setAppliedCoupon(couponInput.trim())}
+                          disabled={!couponInput.trim()}
+                          className="px-4 rounded-2xl bg-gray-900 hover:bg-gray-800 text-white text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer border-none disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Apply
+                        </button>
+                      )}
+                    </div>
+                    {couponError && (
+                      <p className="text-[11px] text-rose-600 font-semibold">{couponError}</p>
+                    )}
+                    {quote?.couponCode && (
+                      <p className="text-[11px] text-green-600 font-semibold">
+                        {quote.couponLabel} applied — you save ${quote.couponDiscount.toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* ====== Live quote from the server ====== */}
                 {checkInDate && checkOutDate && (
                   <div className="bg-white border border-gray-150 rounded-2xl p-4 space-y-2.5">
@@ -1090,6 +1137,13 @@ const PropertyDetails = () => {
                           <div className="flex justify-between text-[11px] text-green-600 font-semibold">
                             <span>{quote.discountPercent}% length-of-stay discount</span>
                             <span>-${quote.discountAmount.toLocaleString()}</span>
+                          </div>
+                        )}
+
+                        {quote.couponDiscount > 0 && (
+                          <div className="flex justify-between text-[11px] text-green-600 font-semibold">
+                            <span>Coupon {quote.couponCode}</span>
+                            <span>-${quote.couponDiscount.toLocaleString()}</span>
                           </div>
                         )}
 
