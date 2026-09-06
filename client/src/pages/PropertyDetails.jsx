@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { MOCK_PROPERTIES } from '../data/mockProperties'
 import ThreeSixtyViewer from '../components/ThreeSixtyViewer'
 import { useGetPropertyByIdQuery } from '../store/api/propertyApi'
-import { useGetAvailabilityQuery, useGetQuoteQuery } from '../store/api/bookingApi'
+import { useGetAvailabilityQuery, useGetQuoteQuery, useCreateBookingMutation } from '../store/api/bookingApi'
 import { addToCart } from '../store/slices/cartSlice'
 import { selectIsAuthenticated } from '../store/slices/authSlice'
 import toast from 'react-hot-toast'
@@ -120,6 +120,8 @@ const PropertyDetails = () => {
 
   // ====== Which horizon the guest is shopping for on this page
   const [rentalType, setRentalType] = useState('short')
+  const [guestsCount, setGuestsCount] = useState(1)
+  const [createBooking, { isLoading: isBooking }] = useCreateBookingMutation()
 
   const HORIZON_LABELS = [
     { id: 'short', label: 'Nightly', hint: '1-29 nights' },
@@ -276,16 +278,49 @@ const PropertyDetails = () => {
     }
   }
 
-  const handleBook = (e) => {
+  // ====== Book Now used to validate the dates, clear the message and stop.
+  // Nothing was ever created, so the button looked like it worked and did nothing.
+  const handleBook = async (e) => {
     e.preventDefault()
+
     if (!checkInDate || !checkOutDate) {
       setIsError(true)
       setBookingMessage('Please select check-in and check-out dates on the calendar.')
       return
     }
 
-    setIsError(false)
-    setBookingMessage(null)
+    if (!isAuthenticated) {
+      toast.error('Please login to book this stay.', { position: 'top-center' })
+      navigate('/login', { state: { from: `/property/${property._id || property.id}` } })
+      return
+    }
+
+    if (!quote) {
+      setIsError(true)
+      setBookingMessage('Still pricing this stay. Try again in a moment.')
+      return
+    }
+
+    try {
+      const res = await createBooking({
+        propertyId: property._id || property.id,
+        checkInDate,
+        checkOutDate,
+        guestsCount: guestsCount,
+        rentalType,
+      }).unwrap()
+
+      setIsError(false)
+      setBookingMessage(null)
+      toast.success(res.message || 'Booking created. Pay to confirm it.', { position: 'top-center' })
+      navigate('/my-bookings')
+    } catch (err) {
+      console.log(err)
+      const message = err?.data?.message || err?.message || 'Could not create that booking.'
+      setIsError(true)
+      setBookingMessage(message)
+      toast.error(message, { position: 'top-center' })
+    }
   }
 
   // ====== Typing a date has to pass the same checks as clicking one
@@ -371,7 +406,7 @@ const PropertyDetails = () => {
       },
       checkInDate,
       checkOutDate,
-      guestsCount: property.maxGuests || 2,
+      guestsCount,
       totalNights: quote.nights,
       totalAmount: quote.dueNow,
     }))
@@ -995,6 +1030,23 @@ const PropertyDetails = () => {
                   </div>
                 </div>
 
+                <div className="bg-gray-50 border border-gray-150 p-3.5 rounded-2xl">
+                  <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                    Guests {property.maxGuests ? `(max ${property.maxGuests})` : ''}
+                  </label>
+                  <select
+                    value={guestsCount}
+                    onChange={(e) => setGuestsCount(Number(e.target.value))}
+                    className="w-full bg-transparent text-xs sm:text-sm font-bold text-gray-800 focus:outline-none cursor-pointer"
+                  >
+                    {Array.from({ length: property.maxGuests || 8 }, (_, index) => index + 1).map((count) => (
+                      <option key={count} value={count}>
+                        {count} guest{count === 1 ? '' : 's'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* The check-out day is not a night, so show the count rather than let people guess */}
                 {selectedNights > 0 && (
                   <div className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-gray-900 text-white">
@@ -1134,9 +1186,10 @@ const PropertyDetails = () => {
                   </button>
                   <button
                     onClick={handleBook}
-                    className="w-full bg-rose-500 hover:bg-rose-600 active:scale-[0.99] text-white rounded-2xl py-3.5 text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-rose-500/10 cursor-pointer"
+                    disabled={isBooking}
+                    className="w-full bg-rose-500 hover:bg-rose-600 active:scale-[0.99] text-white rounded-2xl py-3.5 text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-rose-500/10 cursor-pointer disabled:opacity-60"
                   >
-                    Book Now
+                    {isBooking ? 'Booking...' : 'Book Now'}
                   </button>
                 </div>
               </div>
