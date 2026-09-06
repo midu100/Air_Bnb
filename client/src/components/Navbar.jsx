@@ -39,9 +39,12 @@ const Navbar = () => {
     navigate('/login')
   }
 
+  // The ground is cream the whole way down, so the bar only ever changes
+  // its own background - never the colour of the type sitting on it
+
   const linkClass = ({ isActive }) =>
     `text-[12px] uppercase tracking-[0.18em] transition-colors duration-300 ${
-      isActive ? 'text-brass' : 'text-ivory/65 hover:text-ivory'
+      isActive ? 'text-bronze-soft' : 'text-espresso-soft hover:text-espresso'
     }`
 
   const accountLinks = [
@@ -66,18 +69,22 @@ const Navbar = () => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
         className={`fixed left-0 right-0 top-0 z-50 transition-all duration-500 ${
-          scrolled ? 'border-b border-ink-line bg-ink/90 py-3 backdrop-blur-xl' : 'bg-transparent py-5'
+          scrolled ? 'border-b border-espresso-line bg-cream/90 py-3 backdrop-blur-xl' : 'bg-transparent py-5'
+        } ${
+          'text-espresso'
         }`}
       >
         <nav className="mx-auto flex max-w-[1400px] items-center justify-between px-5 sm:px-8">
           {/* ====== Logo ====== */}
           <Link to="/" className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center border border-brass/50 font-serif text-[17px] text-brass">
+            <span className={`flex h-9 w-9 items-center justify-center border font-serif text-[17px] ${
+              'border-bronze/50 text-bronze'
+            }`}>
               E
             </span>
             <span className="leading-tight">
-              <span className="block font-serif text-[17px] tracking-[0.14em] text-ivory">EASYLET</span>
-              <span className="block text-[8px] uppercase tracking-[0.42em] text-ivory/45">Stays &amp; Homes</span>
+              <span className={`block font-serif text-[17px] tracking-[0.14em] ${'text-espresso'}`}>EASYLET</span>
+              <span className={`block text-[8px] uppercase tracking-[0.42em] ${'text-espresso-soft/60'}`}>Stays &amp; Homes</span>
             </span>
           </Link>
 
@@ -87,7 +94,9 @@ const Navbar = () => {
             <li><NavLink to="/properties" className={linkClass}>{t('nav.properties')}</NavLink></li>
             <li><NavLink to="/map" className={linkClass}>{t('nav.map')}</NavLink></li>
             <li>
-              <a href="#how-it-works" className="text-[12px] uppercase tracking-[0.18em] text-ivory/65 transition-colors duration-300 hover:text-ivory">
+              <a href="#how-it-works" className={`text-[12px] uppercase tracking-[0.18em] transition-colors duration-300 ${
+                'text-espresso-soft hover:text-espresso'
+              }`}>
                 How it works
               </a>
             </li>
@@ -102,12 +111,14 @@ const Navbar = () => {
             {/* Cart */}
             <button
               onClick={() => dispatch(toggleCart())}
-              className="relative cursor-pointer border-none bg-transparent p-1.5 text-ivory/70 transition-colors hover:text-brass"
+              className={`relative cursor-pointer border-none bg-transparent p-1.5 transition-colors hover:text-bronze ${
+                'text-espresso-soft'
+              }`}
               title="Your stays"
             >
               <HiOutlineShoppingCart className="h-5 w-5" />
               {cartCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center bg-brass text-[9px] font-bold text-ink">
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center bg-bronze text-[9px] font-bold text-linen">
                   {cartCount}
                 </span>
               )}
@@ -118,16 +129,16 @@ const Navbar = () => {
               <div className="relative hidden lg:block">
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex cursor-pointer items-center gap-2.5 border border-ivory/20 bg-transparent px-3 py-1.5 transition-colors hover:border-brass"
+                  className="flex cursor-pointer items-center gap-2.5 border border-espresso-line bg-transparent px-3 py-1.5 transition-colors hover:border-bronze"
                 >
                   {currentUser?.profileImg ? (
                     <img src={currentUser.profileImg} alt="" className="h-6 w-6 rounded-full object-cover" />
                   ) : (
-                    <span className="flex h-6 w-6 items-center justify-center bg-brass text-[10px] font-bold text-ink">
+                    <span className="flex h-6 w-6 items-center justify-center bg-bronze text-[10px] font-bold text-linen">
                       {initials}
                     </span>
                   )}
-                  <span className="text-[11px] uppercase tracking-[0.16em] text-ivory/80">
+                  <span className="text-[11px] uppercase tracking-[0.16em] text-espresso-soft">
                     {(currentUser?.fullName || 'Account').split(' ')[0]}
                   </span>
                 </button>
@@ -139,21 +150,21 @@ const Navbar = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                      className="absolute right-0 mt-3 w-56 border border-ink-line bg-ink shadow-2xl"
+                      className="absolute right-0 mt-3 w-56 border border-espresso-line bg-cream shadow-2xl"
                     >
                       {accountLinks.map((item) => (
                         <Link
                           key={item.to}
                           to={item.to}
                           onClick={() => setIsProfileOpen(false)}
-                          className="block px-5 py-3 text-[12px] text-ivory/70 transition-colors hover:bg-ink-soft hover:text-brass"
+                          className="block px-5 py-3 text-[12px] text-espresso-soft transition-colors hover:bg-linen hover:text-bronze"
                         >
                           {item.label}
                         </Link>
                       ))}
                       <button
                         onClick={handleLogout}
-                        className="w-full cursor-pointer border-t border-ink-line bg-transparent px-5 py-3 text-left text-[12px] text-ivory/50 transition-colors hover:text-brass"
+                        className="w-full cursor-pointer border-t border-espresso-line bg-transparent px-5 py-3 text-left text-[12px] text-espresso-soft/70 transition-colors hover:text-bronze"
                       >
                         {t('nav.logout')}
                       </button>
@@ -163,15 +174,17 @@ const Navbar = () => {
               </div>
             ) : (
               <div className="hidden items-center gap-3 lg:flex">
-                <Link to="/login" className="text-[12px] uppercase tracking-[0.18em] text-ivory/65 transition-colors hover:text-ivory">
+                <Link to="/login" className={`text-[12px] uppercase tracking-[0.18em] transition-colors ${
+                  'text-espresso-soft hover:text-espresso'
+                }`}>
                   {t('nav.login')}
                 </Link>
                 <Link
                   to="/register"
-                  className="group inline-flex items-center gap-2.5 bg-brass px-5 py-2.5 text-[11px] uppercase tracking-[0.2em] text-ink transition-colors duration-500 hover:bg-brass-soft"
+                  className="group inline-flex items-center gap-2.5 bg-bronze px-5 py-2.5 text-[11px] uppercase tracking-[0.2em] text-linen transition-colors duration-500 hover:bg-bronze-soft"
                 >
                   {t('nav.signup')}
-                  <span className="h-px w-4 bg-ink transition-all duration-500 group-hover:w-6" />
+                  <span className="h-px w-4 bg-cream transition-all duration-500 group-hover:w-6" />
                 </Link>
               </div>
             )}
@@ -179,7 +192,7 @@ const Navbar = () => {
             {/* Mobile toggle */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="cursor-pointer border-none bg-transparent p-1.5 text-ivory lg:hidden"
+              className={`cursor-pointer border-none bg-transparent p-1.5 lg:hidden ${'text-espresso'}`}
               aria-label="Open menu"
             >
               <HiMenuAlt4 className="h-6 w-6" />
@@ -196,13 +209,13 @@ const Navbar = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[60] bg-ink lg:hidden"
+            className="fixed inset-0 z-[60] bg-cream lg:hidden"
           >
             <div className="flex h-16 items-center justify-between px-5">
-              <span className="font-serif text-[17px] tracking-[0.14em] text-ivory">EASYLET</span>
+              <span className="font-serif text-[17px] tracking-[0.14em] text-espresso">EASYLET</span>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="cursor-pointer border-none bg-transparent p-1.5 text-ivory"
+                className="cursor-pointer border-none bg-transparent p-1.5 text-espresso"
                 aria-label="Close menu"
               >
                 <HiOutlineX className="h-6 w-6" />
@@ -219,7 +232,7 @@ const Navbar = () => {
                   key={item.to}
                   to={item.to}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="border-b border-ink-line py-4 font-serif text-[26px] font-light text-ivory"
+                  className="border-b border-espresso-line py-4 font-serif text-[26px] font-light text-espresso"
                 >
                   {item.label}
                 </NavLink>
@@ -232,14 +245,14 @@ const Navbar = () => {
                       key={item.to}
                       to={item.to}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="border-b border-ink-line py-3.5 text-[13px] uppercase tracking-[0.18em] text-ivory/60"
+                      className="border-b border-espresso-line py-3.5 text-[13px] uppercase tracking-[0.18em] text-espresso-soft/80"
                     >
                       {item.label}
                     </Link>
                   ))}
                   <button
                     onClick={handleLogout}
-                    className="mt-4 cursor-pointer border-none bg-transparent py-3 text-left text-[13px] uppercase tracking-[0.18em] text-brass"
+                    className="mt-4 cursor-pointer border-none bg-transparent py-3 text-left text-[13px] uppercase tracking-[0.18em] text-bronze"
                   >
                     {t('nav.logout')}
                   </button>
@@ -249,14 +262,14 @@ const Navbar = () => {
                   <Link
                     to="/login"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="border border-ivory/25 py-4 text-center text-[12px] uppercase tracking-[0.2em] text-ivory"
+                    className="border border-espresso-line py-4 text-center text-[12px] uppercase tracking-[0.2em] text-espresso"
                   >
                     {t('nav.login')}
                   </Link>
                   <Link
                     to="/register"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="bg-brass py-4 text-center text-[12px] uppercase tracking-[0.2em] text-ink"
+                    className="bg-bronze py-4 text-center text-[12px] uppercase tracking-[0.2em] text-linen"
                   >
                     {t('nav.signup')}
                   </Link>

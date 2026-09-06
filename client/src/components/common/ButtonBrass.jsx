@@ -17,9 +17,9 @@ const ButtonBrass = ({
     'group relative inline-flex items-center justify-center gap-3 px-8 py-4 text-[12px] tracking-[0.22em] uppercase transition-all duration-500 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed'
 
   const styles = {
-    solid: 'bg-brass text-ink hover:bg-brass-soft',
-    outline: 'border border-ivory/30 text-ivory hover:border-brass hover:text-brass',
-    dark: 'border border-brown/25 text-brown hover:bg-brown hover:text-ivory',
+    solid: 'bg-bronze text-linen hover:bg-bronze-soft',
+    outline: 'border border-espresso-line text-espresso hover:border-bronze hover:text-bronze',
+    dark: 'border border-brown/25 text-brown hover:bg-brown hover:text-espresso',
   }
 
   const content = (

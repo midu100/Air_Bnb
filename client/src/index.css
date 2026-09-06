@@ -9,14 +9,25 @@
   --color-brand-light: #fce4ec;
 
   /* ===== Premium palette =====
-     Deep green-black ground, warm ivory type, brass as the single accent. */
-  --color-ink: #0e1918;
-  --color-ink-soft: #14211f;
-  --color-ink-line: #263432;
+     A cream ground with espresso type and one bronze accent. The dark tones
+     survive for the one place they earn it - inside the room. */
+  --color-cream: #f5f1e8;
+  --color-sand: #ebe4d5;
+  --color-linen: #fdfbf7;
+  --color-espresso: #1c1814;
+  --color-espresso-soft: #4a4238;
+  --color-espresso-line: #ded5c4;
+  --color-bronze: #a0682c;
+  --color-bronze-soft: #c08f4e;
+
+  /* Kept for the interior moment and any surface that goes dark on purpose */
+  --color-ink: #16130f;
+  --color-ink-soft: #221d17;
+  --color-ink-line: #332c23;
   --color-ivory: #f6f1e7;
   --color-ivory-soft: #ece3d3;
-  --color-brass: #c2a05c;
-  --color-brass-soft: #dcc08a;
+  --color-brass: #a0682c;
+  --color-brass-soft: #c08f4e;
   --color-brown: #3b2a20;
   --color-tan: #c8a783;
 
@@ -72,18 +83,23 @@
 }
 
 ::selection {
-  background-color: var(--color-brass);
-  color: var(--color-ink);
+  background-color: var(--color-bronze);
+  color: var(--color-linen);
 }
 
 /* Base */
 html {
   scroll-behavior: smooth;
+  /* clip, not hidden - `overflow: hidden` turns the element into a scroll
+     container, and every `position: sticky` inside it then anchors to a box
+     that never scrolls. That silently unpinned the hero. */
+  overflow-x: clip;
 }
 
 body {
-  background-color: var(--color-ink);
-  color: var(--color-ivory);
+  overflow-x: clip;
+  background-color: var(--color-cream);
+  color: var(--color-espresso);
   font-family: var(--font-body);
   font-weight: 300;
 }
@@ -120,7 +136,7 @@ body {
 
 /* Clean card with subtle shadow (smartLET style) */
 .card-clean {
-  background: var(--color-ink-soft);
+  background: var(--color-linen);
   border: 1px solid #f0f0f0;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
