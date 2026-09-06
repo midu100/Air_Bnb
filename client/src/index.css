@@ -12,6 +12,7 @@
   --animate-fade-in: fade-in 0.4s ease-out forwards;
   --animate-float: float 6s ease-in-out infinite;
   --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-slide-in-right: slide-in-right 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   
   @keyframes fade-in-up {
     from {
@@ -26,6 +27,10 @@
   @keyframes fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
+  }
+  @keyframes slide-in-right {
+    from { transform: translateX(24px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
   }
   @keyframes float {
     0%, 100% { transform: translateY(0px); }

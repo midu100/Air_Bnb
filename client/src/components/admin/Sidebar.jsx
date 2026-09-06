@@ -2,22 +2,25 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectCurrentUser, logout } from '../../store/slices/authSlice';
-import { 
-  HiOutlineViewGrid, 
-  HiOutlineHome, 
-  HiOutlineCalendar, 
-  HiOutlineTag, 
-  HiOutlineSparkles, 
-  HiOutlineStar, 
-  HiOutlineCreditCard, 
-  HiOutlineUsers, 
+import {
+  HiOutlineViewGrid,
+  HiOutlineHome,
+  HiOutlineTag,
+  HiOutlineSparkles,
+  HiOutlineStar,
+  HiOutlineCreditCard,
+  HiOutlineUsers,
   HiOutlineCog,
   HiOutlineLogout,
   HiOutlineChatAlt,
   HiOutlinePresentationChartLine,
   HiOutlineCash,
   HiOutlineClock,
-  HiOutlineDocumentText
+  HiOutlineDocumentText,
+  HiOutlineCurrencyDollar,
+  HiOutlineCube,
+  HiOutlineClipboardList,
+  HiOutlineReceiptTax
 } from 'react-icons/hi';
 
 const Sidebar = () => {
@@ -25,25 +28,52 @@ const Sidebar = () => {
   const dispatch = useDispatch();
   const currentUser = useSelector(selectCurrentUser);
 
-  const menuItems = [
-    { name: 'Dashboard', path: '/admin', icon: HiOutlineViewGrid, end: true },
-    { name: 'Assistant', path: '/admin/assistant', icon: HiOutlineSparkles },
-    { name: 'Properties', path: '/admin/properties', icon: HiOutlineHome },
-    { name: 'Bookings', path: '/admin/bookings', icon: HiOutlineCalendar },
-    { name: 'Calendar', path: '/admin/calendar', icon: HiOutlineClock },
-    { name: 'Pricing Rules', path: '/admin/pricing-rules', icon: HiOutlineTag },
-    { name: 'Applications', path: '/admin/applications', icon: HiOutlineDocumentText },
-    { name: 'Inbox Chat', path: '/admin/messages', icon: HiOutlineChatAlt },
-    { name: 'Business Analytics', path: '/admin/analytics', icon: HiOutlinePresentationChartLine },
-    { name: 'Categories', path: '/admin/categories', icon: HiOutlineTag },
-    { name: 'Amenities', path: '/admin/amenities', icon: HiOutlineSparkles },
-    { name: 'Reviews', path: '/admin/reviews', icon: HiOutlineStar },
-    { name: 'Payments Ledger', path: '/admin/payments', icon: HiOutlineCreditCard },
-    { name: 'Host Payouts', path: '/admin/payouts', icon: HiOutlineCash },
-    { name: 'Coupons & Promos', path: '/admin/coupons', icon: HiOutlineTag },
-    { name: 'User Directory', path: '/admin/guests', icon: HiOutlineUsers },
-    { name: 'Workspace Settings', path: '/admin/settings', icon: HiOutlineCog },
+  // ====== Grouped, because seventeen flat links is a list to search rather than
+  // a menu to scan. Every entry has its own icon so none of them read alike.
+  const menuSections = [
+    {
+      title: 'Overview',
+      items: [
+        { name: 'Dashboard', path: '/admin', icon: HiOutlineViewGrid, end: true },
+        { name: 'Business Analytics', path: '/admin/analytics', icon: HiOutlinePresentationChartLine },
+      ],
+    },
+    {
+      title: 'Inventory',
+      items: [
+        { name: 'Properties', path: '/admin/properties', icon: HiOutlineHome },
+        { name: 'Calendar', path: '/admin/calendar', icon: HiOutlineClock },
+        { name: 'Pricing Rules', path: '/admin/pricing-rules', icon: HiOutlineCurrencyDollar },
+        { name: 'Categories', path: '/admin/categories', icon: HiOutlineTag },
+        { name: 'Amenities', path: '/admin/amenities', icon: HiOutlineCube },
+      ],
+    },
+    {
+      title: 'Guests',
+      items: [
+        { name: 'Bookings', path: '/admin/bookings', icon: HiOutlineClipboardList },
+        { name: 'Applications', path: '/admin/applications', icon: HiOutlineDocumentText },
+        { name: 'Inbox Chat', path: '/admin/messages', icon: HiOutlineChatAlt },
+        { name: 'Reviews', path: '/admin/reviews', icon: HiOutlineStar },
+        { name: 'User Directory', path: '/admin/guests', icon: HiOutlineUsers },
+      ],
+    },
+    {
+      title: 'Money',
+      items: [
+        { name: 'Payments Ledger', path: '/admin/payments', icon: HiOutlineCreditCard },
+        { name: 'Host Payouts', path: '/admin/payouts', icon: HiOutlineCash },
+        { name: 'Coupons & Promos', path: '/admin/coupons', icon: HiOutlineReceiptTax },
+      ],
+    },
+    {
+      title: 'Workspace',
+      items: [
+        { name: 'Settings', path: '/admin/settings', icon: HiOutlineCog },
+      ],
+    },
   ];
+
 
   const handleLogout = () => {
     document.cookie = "X_AS-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
@@ -100,28 +130,59 @@ const Sidebar = () => {
           </div>
         </div>
 
+        {/* ====== Assistant sits above the sections — it is a way of working,
+             not another list to browse ====== */}
+        <div className="px-4 pt-4 pb-2 shrink-0">
+          <NavLink
+            to="/admin/assistant"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2.5 rounded transition-all group ${
+                isActive
+                  ? 'bg-white text-black'
+                  : 'bg-neutral-900 text-white hover:bg-neutral-800'
+              }`
+            }
+          >
+            <HiOutlineSparkles className="w-4.5 h-4.5 shrink-0" />
+            <div className="flex flex-col min-w-0">
+              <span className="text-[13px] font-bold uppercase tracking-wider leading-none">Assistant</span>
+              <span className="text-[10px] font-semibold opacity-60 mt-1 leading-none truncate">
+                Ask about your portfolio
+              </span>
+            </div>
+          </NavLink>
+        </div>
+
         {/* Nav Links */}
-        <nav className="flex-1 px-4 py-4 space-y-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.name}
-                to={item.path}
-                end={item.end}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 text-[14px] font-bold uppercase tracking-wider rounded transition-all ${
-                    isActive
-                      ? 'bg-neutral-900 text-white border-l-2 border-white pl-2.5'
-                      : 'text-neutral-400 hover:text-white hover:bg-neutral-950'
-                  }`
-                }
-              >
-                <Icon className="w-4 h-4" />
-                <span>{item.name}</span>
-              </NavLink>
-            );
-          })}
+        <nav className="flex-1 px-4 pb-4 space-y-5">
+          {menuSections.map((section) => (
+            <div key={section.title} className="space-y-1">
+              <p className="px-3 pb-1 text-[9px] font-black uppercase tracking-[0.14em] text-neutral-600">
+                {section.title}
+              </p>
+
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.name}
+                    to={item.path}
+                    end={item.end}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3 py-2 text-[13px] font-bold uppercase tracking-wider rounded transition-all ${
+                        isActive
+                          ? 'bg-neutral-900 text-white border-l-2 border-white pl-2.5'
+                          : 'text-neutral-400 hover:text-white hover:bg-neutral-950'
+                      }`
+                    }
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{item.name}</span>
+                  </NavLink>
+                );
+              })}
+            </div>
+          ))}
         </nav>
       </div>
 
