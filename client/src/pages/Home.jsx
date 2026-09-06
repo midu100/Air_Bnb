@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import HeroSection from '../components/HeroSection'
 import SectionHeading from '../components/common/SectionHeading'
+import CurvedCarousel from '../components/CurvedCarousel'
 import CategoryCarousel from '../components/CategoryCarousel'
 import TrendingDestinations from '../components/TrendingDestinations'
 import PropertyCarousel from '../components/PropertyCarousel'
@@ -84,14 +85,15 @@ const Home = () => {
         <SectionHeading eyebrow="Guest favourites" title="Rated highest by the people who stayed" />
       </div>
       {!loading && (
-        <PropertyCarousel
-          properties={otherPopularProperties.length > 0 ? otherPopularProperties : properties}
-          subtitle="Highly rated stays loved by travelers worldwide"
-        />
+        <div className="mx-auto max-w-[1400px] px-5 pb-20 pt-10 sm:px-8">
+          <CurvedCarousel
+            properties={(otherPopularProperties.length > 0 ? otherPopularProperties : properties).slice(0, 8)}
+          />
+        </div>
       )}
 
       {/* 3-Step Guide */}
-      <div className="bg-gray-50/50">
+      <div className="bg-ink">
         <HowItWorks />
       </div>
 

@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router'
+import React, { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { FiArrowDown, FiSearch } from 'react-icons/fi'
 import heroVdo from '../assets/videos/hero.mp4'
+import ScrollPanorama from './ScrollPanorama'
 import { useLocale } from '../i18n/LocaleContext'
+import { useGetFeaturedPropertiesQuery } from '../store/api/propertyApi'
 
-// What the platform actually offers, cycled one at a time
+const PANORAMA = 'https://threejs.org/examples/textures/2294472375_24a3b8ef46_o.jpg'
+
 const PHRASES = [
   'beachfront villas by the night',
   'furnished lofts by the month',
@@ -13,12 +16,28 @@ const PHRASES = [
   'forest cabins for a long weekend',
 ]
 
+/**
+ * The hero walks you inside before you book.
+ *
+ *   outside   the footage, the headline, the search
+ *   entering  the frame opens like a doorway and the room resolves behind it
+ *   inside    you are in the room and can look around
+ *
+ * Transform and clip-path are driven by framer-motion, which updates them
+ * reliably on a pinned section. Opacity is driven by a phase and CSS instead —
+ * motion values for opacity stay frozen here, so they are not trusted with it.
+ */
 const HeroSection = () => {
   const navigate = useNavigate()
   const { t } = useLocale()
+  const sectionRef = useRef(null)
 
   const [destination, setDestination] = useState('')
   const [guests, setGuests] = useState('1')
+  const [phase, setPhase] = useState('outside')
+
+  const { data: featuredData } = useGetFeaturedPropertiesQuery()
+  const showcase = featuredData?.properties?.[0] || null
 
   // ====== Typewriter
   const [currentText, setCurrentText] = useState('')
@@ -26,51 +45,45 @@ const HeroSection = () => {
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
-    const currentPhrase = PHRASES[phraseIndex]
-    const atEnd = !isDeleting && currentText === currentPhrase
+    const phrase = PHRASES[phraseIndex]
+    const atEnd = !isDeleting && currentText === phrase
     const atStart = isDeleting && currentText === ''
 
-    // Every state change happens in the timer callback, never in the effect
-    // body, so one keystroke cannot cascade into a second render pass
-    const delay = atEnd ? 2100 : isDeleting ? 34 : 62
-
     const timer = setTimeout(() => {
-      if (atEnd) {
-        setIsDeleting(true)
-        return
-      }
+      if (atEnd) return setIsDeleting(true)
       if (atStart) {
         setIsDeleting(false)
-        setPhraseIndex((prev) => (prev + 1) % PHRASES.length)
-        return
+        return setPhraseIndex((prev) => (prev + 1) % PHRASES.length)
       }
       setCurrentText(
-        isDeleting
-          ? currentPhrase.substring(0, currentText.length - 1)
-          : currentPhrase.substring(0, currentText.length + 1)
+        isDeleting ? phrase.substring(0, currentText.length - 1) : phrase.substring(0, currentText.length + 1)
       )
-    }, delay)
+    }, atEnd ? 2100 : isDeleting ? 34 : 62)
 
     return () => clearTimeout(timer)
   }, [currentText, isDeleting, phraseIndex])
 
-  // ====== The hero sits at the top of the document, so plain scrollY is the
-  // most reliable driver for the pinned section beneath it.
-  const [vh, setVh] = useState(() => (typeof window === 'undefined' ? 800 : window.innerHeight))
-  const { scrollY } = useScroll()
+  // ====== Scroll
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end end'] })
 
+  const panoramaProgress = useRef(0)
   useEffect(() => {
-    const handleResize = () => setVh(window.innerHeight)
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+    const apply = (value) => {
+      panoramaProgress.current = Math.max(0, Math.min(1, (value - 0.24) / 0.5))
+      setPhase(value > 0.6 ? 'inside' : value > 0.22 ? 'entering' : 'outside')
+    }
+    apply(scrollYProgress.get())
+    return scrollYProgress.on('change', apply)
+  }, [scrollYProgress])
 
-  // The footage keeps pushing in while the copy lifts away
-  const videoScale = useTransform(scrollY, [0, vh * 1.5], [1.04, 1.42])
-  const veil = useTransform(scrollY, [0, vh * 1.3], [0.42, 0.96])
-  const copyOpacity = useTransform(scrollY, [0, vh * 0.6], [1, 0])
-  const copyY = useTransform(scrollY, [0, vh * 0.85], [0, -130])
-  const cueOpacity = useTransform(scrollY, [0, vh * 0.28], [1, 0])
+  const videoScale = useTransform(scrollYProgress, [0, 0.6], [1.04, 2.7])
+  const apertureInset = useTransform(scrollYProgress, [0.1, 0.58], ['0%', '48%'])
+  const apertureRadius = useTransform(scrollYProgress, [0.1, 0.58], ['0px', '280px'])
+  const doorway = useTransform(
+    [apertureInset, apertureRadius],
+    ([inset, radius]) => `inset(${inset} ${inset} ${inset} ${inset} round ${radius})`
+  )
+  const copyY = useTransform(scrollYProgress, [0, 0.3], [0, -120])
 
   const line = {
     hidden: { y: '112%' },
@@ -85,68 +98,73 @@ const HeroSection = () => {
     navigate(`/properties?destination=${destination}&guests=${guests}`)
   }
 
+  const isOutside = phase === 'outside'
+  const isInside = phase === 'inside'
+
   return (
-    <section className="relative h-[150vh]">
-      <div className="sticky top-0 h-screen overflow-hidden grain">
-        {/* ====== Footage ====== */}
-        <motion.div style={{ scale: videoScale }} className="absolute inset-0 will-change-transform">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="h-full w-full object-cover"
-          >
+    <section ref={sectionRef} className="relative h-[240vh]">
+      <div className="sticky top-0 h-screen overflow-hidden bg-ink grain">
+
+        {/* ====== The room, always behind ====== */}
+        <div className="absolute inset-0">
+          <ScrollPanorama imageSrc={PANORAMA} progressRef={panoramaProgress} interactive={isInside} />
+        </div>
+
+        {/* ====== The doorway ====== */}
+        <motion.div
+          style={{ scale: videoScale, clipPath: doorway }}
+          className={`absolute inset-0 will-change-transform transition-opacity duration-700 ${
+            isInside ? 'opacity-0' : 'opacity-100'
+          }`}
+        >
+          <video autoPlay loop muted playsInline className="h-full w-full object-cover">
             <source src={heroVdo} type="video/mp4" />
           </video>
+          <div
+            className={`absolute inset-0 bg-ink transition-opacity duration-700 ${
+              isOutside ? 'opacity-40' : 'opacity-85'
+            }`}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/20 to-ink/60" />
         </motion.div>
 
-        {/* ====== Veils ====== */}
-        <motion.div style={{ opacity: veil }} className="absolute inset-0 bg-ink" />
-        <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/25 to-ink/65" />
-
-        {/* ====== Copy ====== */}
-        <motion.div
-          style={{ opacity: copyOpacity, y: copyY }}
-          className="relative z-10 mx-auto flex h-full max-w-[1400px] flex-col justify-end px-5 pb-20 sm:px-8 sm:pb-24 lg:pb-28"
-        >
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.2 }}
-            className="eyebrow text-brass"
-          >
-            Nightly · Monthly · Long lease
-          </motion.p>
-
-          <h1 className="mt-6 max-w-[16ch] font-serif text-[44px] font-light leading-[0.98] text-ivory sm:text-[68px] lg:text-[94px]">
-            {['Stay a night,', 'or stay for good'].map((text, i) => (
-              <span key={text} className="block overflow-hidden">
-                <motion.span variants={line} custom={i} initial="hidden" animate="show" className="block">
-                  {text}
-                </motion.span>
-              </span>
-            ))}
-          </h1>
-
+        {/* ====== Copy and search ====== */}
+        <div className="pointer-events-none relative z-10 mx-auto flex h-full max-w-[1400px] flex-col justify-end px-5 pb-20 sm:px-8 sm:pb-24 lg:pb-28">
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.95, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-8 space-y-8"
+            style={{ y: copyY }}
+            className={`transition-opacity duration-500 ${isOutside ? 'opacity-100' : 'opacity-0'}`}
           >
-            <p className="max-w-[52ch] text-[15px] leading-relaxed text-ivory/70 sm:text-[17px]">
+            <p className="eyebrow text-brass">Nightly · Monthly · Long lease</p>
+
+            <h1 className="mt-6 max-w-[16ch] font-serif text-[44px] font-light leading-[0.98] text-ivory sm:text-[68px] lg:text-[94px]">
+              {['Step inside', 'before you book'].map((text, i) => (
+                <span key={text} className="block overflow-hidden">
+                  <motion.span variants={line} custom={i} initial="hidden" animate="show" className="block">
+                    {text}
+                  </motion.span>
+                </span>
+              ))}
+            </h1>
+
+            <p className="mt-7 max-w-[52ch] text-[15px] leading-relaxed text-ivory/70 sm:text-[17px]">
               One platform for{' '}
               <span className="text-brass">
                 {currentText}
                 <span className="ml-0.5 inline-block w-px animate-pulse bg-brass align-middle" style={{ height: '1em' }} />
               </span>
             </p>
+          </motion.div>
 
-            {/* ====== Search ====== */}
+          {/* The search never leaves — someone who came to look for a home
+              should not have to scroll through a film to reach it */}
+          <div
+            className={`pointer-events-auto mt-8 transition-opacity duration-500 ${
+              phase === 'entering' ? 'opacity-25' : 'opacity-100'
+            }`}
+          >
             <form
               onSubmit={handleSearch}
-              className="flex w-full max-w-2xl flex-col gap-px overflow-hidden border border-ivory/15 bg-ink/40 backdrop-blur-md sm:flex-row"
+              className="flex w-full max-w-2xl flex-col gap-px overflow-hidden rounded-2xl border border-ivory/15 bg-ink/50 backdrop-blur-md sm:flex-row"
             >
               <label className="flex-1 px-6 py-4">
                 <span className="eyebrow block text-ivory/40">{t('explore.destination')}</span>
@@ -164,7 +182,7 @@ const HeroSection = () => {
                 <select
                   value={guests}
                   onChange={(e) => setGuests(e.target.value)}
-                  className="mt-1.5 w-full cursor-pointer bg-transparent text-[15px] text-ivory focus:outline-none sm:w-24"
+                  className="mt-1.5 w-full cursor-pointer bg-transparent text-[15px] text-ivory focus:outline-none sm:w-20"
                 >
                   {[1, 2, 4, 6, 8].map((count) => (
                     <option key={count} value={count} className="bg-ink text-ivory">
@@ -182,15 +200,47 @@ const HeroSection = () => {
                 <span className="hidden sm:inline">Search</span>
               </button>
             </form>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
+
+        {/* ====== Inside ====== */}
+        <div
+          className={`absolute inset-x-0 bottom-0 z-20 mx-auto max-w-[1400px] px-5 pb-14 transition-all duration-700 sm:px-8 ${
+            isInside ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-6 opacity-0'
+          }`}
+        >
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="eyebrow text-brass">Drag to look around</p>
+              <p className="mt-3 max-w-[30ch] font-serif text-[26px] font-light leading-tight text-ivory sm:text-[34px]">
+                {showcase ? showcase.title : 'Every listing opens like this'}
+              </p>
+              {showcase && (
+                <p className="mt-2 text-[13px] text-ivory/55">
+                  {showcase.city}, {showcase.country} · from ${showcase.pricePerNight}/night
+                </p>
+              )}
+            </div>
+
+            {showcase && (
+              <Link
+                to={`/property/${showcase._id}`}
+                className="group inline-flex w-fit items-center gap-3 rounded-full bg-brass px-7 py-4 text-[12px] uppercase tracking-[0.22em] text-ink transition-colors duration-500 hover:bg-brass-soft"
+              >
+                See this home
+                <span className="h-px w-6 bg-ink transition-all duration-500 group-hover:w-9" />
+              </Link>
+            )}
+          </div>
+        </div>
 
         {/* ====== Scroll cue ====== */}
-        <motion.div
-          style={{ opacity: cueOpacity }}
-          className="absolute bottom-7 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2"
+        <div
+          className={`absolute bottom-7 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 transition-opacity duration-500 ${
+            isOutside ? 'opacity-100' : 'opacity-0'
+          }`}
         >
-          <span className="text-[9px] uppercase tracking-[0.4em] text-ivory/40">Scroll</span>
+          <span className="text-[9px] uppercase tracking-[0.4em] text-ivory/40">Scroll to step inside</span>
           <motion.span
             animate={{ y: [0, 7, 0] }}
             transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
@@ -198,7 +248,7 @@ const HeroSection = () => {
           >
             <FiArrowDown size={14} />
           </motion.span>
-        </motion.div>
+        </div>
       </div>
     </section>
   )
