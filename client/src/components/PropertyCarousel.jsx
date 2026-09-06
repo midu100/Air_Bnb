@@ -16,14 +16,14 @@ const PropertyCarousel = ({ properties, title, subtitle }) => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 font-sans">
       <div className="flex items-end justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-display font-bold text-gray-800">{title}</h2>
-          {subtitle && <p className="text-xs text-gray-400 mt-1">{subtitle}</p>}
+          {title && <h2 className="text-2xl font-serif font-light text-ivory">{title}</h2>}
+          {subtitle && <p className="text-xs text-ivory/40 mt-1">{subtitle}</p>}
         </div>
 
         <div className="flex gap-2">
           <button
             onClick={() => scroll('left')}
-            className="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 active:scale-95 transition-all cursor-pointer shadow-sm"
+            className="w-9 h-9 rounded-full bg-ink-soft border border-ink-line flex items-center justify-center text-ivory/40 hover:text-ivory/65 hover:border-gray-300 active:scale-95 transition-all cursor-pointer shadow-sm"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
@@ -31,7 +31,7 @@ const PropertyCarousel = ({ properties, title, subtitle }) => {
           </button>
           <button
             onClick={() => scroll('right')}
-            className="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 active:scale-95 transition-all cursor-pointer shadow-sm"
+            className="w-9 h-9 rounded-full bg-ink-soft border border-ink-line flex items-center justify-center text-ivory/40 hover:text-ivory/65 hover:border-gray-300 active:scale-95 transition-all cursor-pointer shadow-sm"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />

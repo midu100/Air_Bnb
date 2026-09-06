@@ -26,7 +26,7 @@ const RevealText = ({ text, className = '', delay = 0, once = true }) => {
     >
       {words.map((word, i) => (
         <span key={`${word}-${i}`} className="inline-block overflow-hidden align-bottom">
-          <motion.span variants={wordVariants} custom={i} className="inline-block">
+          <motion.span variants={wordVariants} custom={i} className="inline-block whitespace-pre">
             {word}
             {i < words.length - 1 ? ' ' : ''}
           </motion.span>

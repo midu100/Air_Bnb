@@ -1,51 +1,84 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { motion, useScroll, useTransform } from 'framer-motion'
+import { FiArrowDown, FiSearch } from 'react-icons/fi'
 import heroVdo from '../assets/videos/hero.mp4'
-import SearchBar from './common/SearchBar'
-import ButtonOne from './common/ButtonOne'
-import { Typewriter } from 'react-simple-typewriter'
+import { useLocale } from '../i18n/LocaleContext'
+
+// What the platform actually offers, cycled one at a time
+const PHRASES = [
+  'beachfront villas by the night',
+  'furnished lofts by the month',
+  'a home on a proper lease',
+  'forest cabins for a long weekend',
+]
 
 const HeroSection = () => {
   const navigate = useNavigate()
+  const { t } = useLocale()
+
   const [destination, setDestination] = useState('')
-  const [checkIn, setCheckIn] = useState('')
-  const [checkOut, setCheckOut] = useState('')
   const [guests, setGuests] = useState('1')
 
-  // Typewriter
-  const phrases = [
-    'Luxurious Beachfront Villas',
-    'Chic Downtown Lofts',
-    'Cozy Forest Cabins',
-    'Exotic Private Islands',
-    'Stunning Architectural Masterpieces'
-  ]
+  // ====== Typewriter
   const [currentText, setCurrentText] = useState('')
   const [phraseIndex, setPhraseIndex] = useState(0)
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
-    let timer
-    const currentPhrase = phrases[phraseIndex]
-    const typingSpeed = isDeleting ? 40 : 80
+    const currentPhrase = PHRASES[phraseIndex]
+    const atEnd = !isDeleting && currentText === currentPhrase
+    const atStart = isDeleting && currentText === ''
 
-    if (!isDeleting && currentText === currentPhrase) {
-      timer = setTimeout(() => setIsDeleting(true), 2000)
-    } else if (isDeleting && currentText === '') {
-      setIsDeleting(false)
-      setPhraseIndex((prev) => (prev + 1) % phrases.length)
-    } else {
-      timer = setTimeout(() => {
-        setCurrentText(
-          isDeleting
-            ? currentPhrase.substring(0, currentText.length - 1)
-            : currentPhrase.substring(0, currentText.length + 1)
-        )
-      }, typingSpeed)
-    }
+    // Every state change happens in the timer callback, never in the effect
+    // body, so one keystroke cannot cascade into a second render pass
+    const delay = atEnd ? 2100 : isDeleting ? 34 : 62
+
+    const timer = setTimeout(() => {
+      if (atEnd) {
+        setIsDeleting(true)
+        return
+      }
+      if (atStart) {
+        setIsDeleting(false)
+        setPhraseIndex((prev) => (prev + 1) % PHRASES.length)
+        return
+      }
+      setCurrentText(
+        isDeleting
+          ? currentPhrase.substring(0, currentText.length - 1)
+          : currentPhrase.substring(0, currentText.length + 1)
+      )
+    }, delay)
 
     return () => clearTimeout(timer)
   }, [currentText, isDeleting, phraseIndex])
+
+  // ====== The hero sits at the top of the document, so plain scrollY is the
+  // most reliable driver for the pinned section beneath it.
+  const [vh, setVh] = useState(() => (typeof window === 'undefined' ? 800 : window.innerHeight))
+  const { scrollY } = useScroll()
+
+  useEffect(() => {
+    const handleResize = () => setVh(window.innerHeight)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // The footage keeps pushing in while the copy lifts away
+  const videoScale = useTransform(scrollY, [0, vh * 1.5], [1.04, 1.42])
+  const veil = useTransform(scrollY, [0, vh * 1.3], [0.42, 0.96])
+  const copyOpacity = useTransform(scrollY, [0, vh * 0.6], [1, 0])
+  const copyY = useTransform(scrollY, [0, vh * 0.85], [0, -130])
+  const cueOpacity = useTransform(scrollY, [0, vh * 0.28], [1, 0])
+
+  const line = {
+    hidden: { y: '112%' },
+    show: (i) => ({
+      y: '0%',
+      transition: { duration: 1.15, delay: 0.35 + i * 0.12, ease: [0.22, 1, 0.36, 1] },
+    }),
+  }
 
   const handleSearch = (e) => {
     e.preventDefault()
@@ -53,70 +86,121 @@ const HeroSection = () => {
   }
 
   return (
-    <div className="relative w-full h-screen flex items-center justify-center overflow-hidden font-sans">
-      {/* Background Video with grayscale filter (smartLET cityscape style) */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute w-full h-full object-cover scale-105 pointer-events-none z-0"
-        style={{ filter: 'grayscale(0.3) brightness(0.9)' }}
-        src={heroVdo}
-      />
+    <section className="relative h-[150vh]">
+      <div className="sticky top-0 h-screen overflow-hidden grain">
+        {/* ====== Footage ====== */}
+        <motion.div style={{ scale: videoScale }} className="absolute inset-0 will-change-transform">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="h-full w-full object-cover"
+          >
+            <source src={heroVdo} type="video/mp4" />
+          </video>
+        </motion.div>
 
-      {/* Light overlay (smartLET uses a light/white-ish overlay, not dark) */}
-      {/* <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/40 to-white/80 z-10"></div> */}
+        {/* ====== Veils ====== */}
+        <motion.div style={{ opacity: veil }} className="absolute inset-0 bg-ink" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/25 to-ink/65" />
 
-      {/* Hero Content */}
-      <div className="relative z-20 max-w-4xl mx-auto px-4 text-center select-none flex flex-col items-center">
-        {/* Title */}
-        <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-extrabold tracking-tight mb-2 text-white max-w-4xl leading-tight">
-          Renting Made{' '}
-          <span className="text-[#e6e625]"><Typewriter loop={false} typeSpeed={20} words={['Smart','Easy']}/></span>
-        </h1>
-
-        {/* Typewriter subtitle */}
-        <div className="h-10 sm:h-12 flex items-center justify-center mb-6">
-          <span className="text-lg sm:text-2xl font-display font-semibold text-white">
-            {currentText}
-            <span className="inline-block w-0.5 h-6 sm:h-7 ml-1 bg-[#f0506e] animate-pulse align-middle"></span>
-          </span>
-
-          
-        </div>
-
-        {/* Subtitle */}
-        <p className="text-white text-sm sm:text-base max-w-xl mb-10 leading-relaxed font-light">
-          Discover handpicked spaces around the globe. Browse verified properties and book instantly with zero double-booking hassles.
-        </p>
-
-        {/* Search Panel (smartLET-style: white card, subtle shadow) */}
-        <form
-          onSubmit={handleSearch}
-          className="search-panel w-full max-w-3xl p-3 rounded-full flex flex-col md:flex-row gap-3 items-center"
+        {/* ====== Copy ====== */}
+        <motion.div
+          style={{ opacity: copyOpacity, y: copyY }}
+          className="relative z-10 mx-auto flex h-full max-w-[1400px] flex-col justify-end px-5 pb-20 sm:px-8 sm:pb-24 lg:pb-28"
         >
-         
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 0.2 }}
+            className="eyebrow text-brass"
+          >
+            Nightly · Monthly · Long lease
+          </motion.p>
 
-          <SearchBar placeholder={'Search by your area.'} />
+          <h1 className="mt-6 max-w-[16ch] font-serif text-[44px] font-light leading-[0.98] text-ivory sm:text-[68px] lg:text-[94px]">
+            {['Stay a night,', 'or stay for good'].map((text, i) => (
+              <span key={text} className="block overflow-hidden">
+                <motion.span variants={line} custom={i} initial="hidden" animate="show" className="block">
+                  {text}
+                </motion.span>
+              </span>
+            ))}
+          </h1>
 
-          {/* Divider */}
-          <div className="hidden md:block w-px h-8 bg-gray-200"></div>
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.95, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-8 space-y-8"
+          >
+            <p className="max-w-[52ch] text-[15px] leading-relaxed text-ivory/70 sm:text-[17px]">
+              One platform for{' '}
+              <span className="text-brass">
+                {currentText}
+                <span className="ml-0.5 inline-block w-px animate-pulse bg-brass align-middle" style={{ height: '1em' }} />
+              </span>
+            </p>
 
-          <div className="hidden md:block w-px h-8 bg-gray-200"></div>
+            {/* ====== Search ====== */}
+            <form
+              onSubmit={handleSearch}
+              className="flex w-full max-w-2xl flex-col gap-px overflow-hidden border border-ivory/15 bg-ink/40 backdrop-blur-md sm:flex-row"
+            >
+              <label className="flex-1 px-6 py-4">
+                <span className="eyebrow block text-ivory/40">{t('explore.destination')}</span>
+                <input
+                  type="text"
+                  value={destination}
+                  onChange={(e) => setDestination(e.target.value)}
+                  placeholder={t('explore.whereTo')}
+                  className="mt-1.5 w-full bg-transparent text-[15px] text-ivory placeholder-ivory/30 focus:outline-none"
+                />
+              </label>
 
-          <ButtonOne name={'Search'} />
-        </form>
+              <label className="px-6 py-4 sm:border-l sm:border-ivory/15">
+                <span className="eyebrow block text-ivory/40">{t('explore.guests')}</span>
+                <select
+                  value={guests}
+                  onChange={(e) => setGuests(e.target.value)}
+                  className="mt-1.5 w-full cursor-pointer bg-transparent text-[15px] text-ivory focus:outline-none sm:w-24"
+                >
+                  {[1, 2, 4, 6, 8].map((count) => (
+                    <option key={count} value={count} className="bg-ink text-ivory">
+                      {count}{count === 8 ? '+' : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <button
+                type="submit"
+                className="group flex items-center justify-center gap-3 bg-brass px-8 py-5 text-[12px] uppercase tracking-[0.22em] text-ink transition-colors duration-500 hover:bg-brass-soft"
+              >
+                <FiSearch size={15} />
+                <span className="hidden sm:inline">Search</span>
+              </button>
+            </form>
+          </motion.div>
+        </motion.div>
+
+        {/* ====== Scroll cue ====== */}
+        <motion.div
+          style={{ opacity: cueOpacity }}
+          className="absolute bottom-7 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2"
+        >
+          <span className="text-[9px] uppercase tracking-[0.4em] text-ivory/40">Scroll</span>
+          <motion.span
+            animate={{ y: [0, 7, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+            className="text-brass"
+          >
+            <FiArrowDown size={14} />
+          </motion.span>
+        </motion.div>
       </div>
-
-      {/* Scroll indicator */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center animate-float">
-        <span className="text-[10px] text-gray-400 font-medium tracking-widest uppercase mb-1">Explore Properties</span>
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#f0506e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-        </svg>
-      </div>
-    </div>
+    </section>
   )
 }
 

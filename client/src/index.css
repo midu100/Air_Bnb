@@ -82,9 +82,12 @@ html {
 }
 
 body {
-  background-color: #ffffff;
-  color: #1a1a2e;
+  background-color: var(--color-ink);
+  color: var(--color-ivory);
+  font-family: var(--font-body);
+  font-weight: 300;
 }
+
 
 ::-webkit-scrollbar {
   width: 6px;
@@ -117,7 +120,7 @@ body {
 
 /* Clean card with subtle shadow (smartLET style) */
 .card-clean {
-  background: #ffffff;
+  background: var(--color-ink-soft);
   border: 1px solid #f0f0f0;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);

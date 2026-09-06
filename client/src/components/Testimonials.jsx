@@ -31,10 +31,10 @@ const Testimonials = () => {
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 font-sans">
       <div className="text-center mb-14">
-        <h2 className="text-3xl font-display font-bold text-gray-800">
-          What Our <span className="text-[#f0506e]">Guests Say</span>
+        <h2 className="text-3xl font-serif font-bold text-ivory">
+          What Our <span className="text-brass">Guests Say</span>
         </h2>
-        <p className="text-gray-400 text-sm mt-2 max-w-lg mx-auto">
+        <p className="text-ivory/40 text-sm mt-2 max-w-lg mx-auto">
           Hear reviews from hosts and travelers about their experiences.
         </p>
       </div>
@@ -62,19 +62,19 @@ const Testimonials = () => {
                 ))}
               </div>
 
-              <p className="text-sm text-gray-500 leading-relaxed italic">
+              <p className="text-sm text-ivory/55 leading-relaxed italic">
                 "{item.quote}"
               </p>
             </div>
 
             {/* Profile */}
-            <div className="flex items-center gap-3 mt-8 pt-4 border-t border-gray-100">
-              <div className="w-10 h-10 rounded-full bg-[#fce4ec] flex items-center justify-center font-bold text-xs text-[#f0506e]">
+            <div className="flex items-center gap-3 mt-8 pt-4 border-t border-ink-line">
+              <div className="w-10 h-10 rounded-full bg-[#fce4ec] flex items-center justify-center font-bold text-xs text-brass">
                 {item.avatar}
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-gray-700">{item.name}</h4>
-                <p className="text-[10px] text-gray-400">{item.role}</p>
+                <h4 className="text-sm font-semibold text-ivory/80">{item.name}</h4>
+                <p className="text-[10px] text-ivory/40">{item.role}</p>
               </div>
             </div>
           </div>

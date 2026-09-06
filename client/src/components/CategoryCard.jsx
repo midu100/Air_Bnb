@@ -22,7 +22,7 @@ const CategoryCard = ({ category, isActive, onClick }) => {
         
         {/* Count badge */}
         {count && (
-          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-gray-700 text-[10px] font-bold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 shadow-sm">
+          <div className="absolute top-3 right-3 bg-ink-soft/90 backdrop-blur-sm text-ivory/80 text-[10px] font-bold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 shadow-sm">
             {count} properties
           </div>
         )}
@@ -30,7 +30,7 @@ const CategoryCard = ({ category, isActive, onClick }) => {
 
       {/* Label */}
       <h3 className={`mt-2.5 text-sm font-bold transition-colors duration-200 ${
-        isActive ? 'text-[#f0506e]' : 'text-gray-800 group-hover:text-[#f0506e]'
+        isActive ? 'text-brass' : 'text-ivory group-hover:text-brass'
       }`}>
         {name}
       </h3>

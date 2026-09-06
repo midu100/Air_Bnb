@@ -125,8 +125,8 @@ const CategoryCarousel = ({ activeCategory, onSelectCategory }) => {
             disabled={!canScrollLeft}
             className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-sm active:scale-95 ${
               canScrollLeft
-                ? 'bg-white border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-300 hover:shadow-md'
-                : 'bg-gray-50 border-gray-100 text-gray-200 cursor-not-allowed'
+                ? 'bg-ink-soft border-ink-line text-ivory/65 hover:text-ivory hover:border-gray-300 hover:shadow-md'
+                : 'bg-ink border-ink-line text-gray-200 cursor-not-allowed'
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -138,8 +138,8 @@ const CategoryCarousel = ({ activeCategory, onSelectCategory }) => {
             disabled={!canScrollRight}
             className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-sm active:scale-95 ${
               canScrollRight
-                ? 'bg-white border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-300 hover:shadow-md'
-                : 'bg-gray-50 border-gray-100 text-gray-200 cursor-not-allowed'
+                ? 'bg-ink-soft border-ink-line text-ivory/65 hover:text-ivory hover:border-gray-300 hover:shadow-md'
+                : 'bg-ink border-ink-line text-gray-200 cursor-not-allowed'
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import HeroSection from '../components/HeroSection'
+import SectionHeading from '../components/common/SectionHeading'
 import CategoryCarousel from '../components/CategoryCarousel'
 import TrendingDestinations from '../components/TrendingDestinations'
 import PropertyCarousel from '../components/PropertyCarousel'
 import HowItWorks from '../components/HowItWorks'
 import Testimonials from '../components/Testimonials'
-import { MOCK_PROPERTIES } from '../data/mockProperties'
 
 import { useGetPropertiesQuery } from '../store/api/propertyApi'
 
@@ -48,7 +48,7 @@ const Home = () => {
   }
 
   return (
-    <div className="w-full pb-10">
+    <div className="w-full bg-ink">
       {/* Dynamic Video Hero */}
       <HeroSection />
 
@@ -62,23 +62,30 @@ const Home = () => {
       <TrendingDestinations />
 
       {/* Main Filtered Property Carousel */}
-      <div className="bg-gray-50 py-4">
+      <div className="bg-ink py-4">
+        <div className="mx-auto max-w-[1400px] px-5 pt-16 sm:px-8">
+          <SectionHeading
+            eyebrow={`Popular ${activeCategory}`}
+            title="Places people keep coming back to"
+          />
+        </div>
         {loading ? (
-          <div className="py-12 text-center text-gray-400 font-semibold text-sm">Loading properties...</div>
+          <div className="py-12 text-center text-ivory/40 font-semibold text-sm">Loading properties...</div>
         ) : (
           <PropertyCarousel
             properties={filteredProperties.length > 0 ? filteredProperties : properties.slice(0, 4)}
-            title={`Popular ${activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)}`}
             subtitle={`Handpicked stays listed in ${activeCategory}`}
           />
         )}
       </div>
 
       {/* Secondary Guest Favorite Carousel */}
+      <div className="mx-auto max-w-[1400px] px-5 pt-20 sm:px-8">
+        <SectionHeading eyebrow="Guest favourites" title="Rated highest by the people who stayed" />
+      </div>
       {!loading && (
         <PropertyCarousel
           properties={otherPopularProperties.length > 0 ? otherPopularProperties : properties}
-          title="Guest Favorites"
           subtitle="Highly rated stays loved by travelers worldwide"
         />
       )}

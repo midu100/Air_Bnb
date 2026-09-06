@@ -7,7 +7,7 @@ import ScrollToTop from '../components/ScrollToTop'
 
 const LayoutOne = () => {
   return (
-    <div className="min-h-screen bg-white text-gray-900 flex flex-col font-sans overflow-x-hidden antialiased">
+    <div className="min-h-screen bg-ink text-ivory flex flex-col font-body overflow-x-hidden antialiased">
       {/* Scroll Reset */}
       <ScrollToTop />
 

@@ -50,10 +50,10 @@ const TrendingDestinations = () => {
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 font-sans">
       {/* Section Header */}
       <div className="mb-6">
-        <h2 className="text-3xl font-display font-bold text-gray-900 tracking-tight">
+        <h2 className="text-3xl font-serif font-bold text-ivory tracking-tight">
           Trending destinations
         </h2>
-        <p className="text-sm text-gray-400 mt-1">
+        <p className="text-sm text-ivory/40 mt-1">
           Most popular choices for travelers from Bangladesh
         </p>
       </div>
@@ -75,14 +75,14 @@ const TrendingDestinations = () => {
             
             {/* City name with flag */}
             <div className="absolute top-5 left-5 z-10">
-              <h3 className="text-xl md:text-2xl font-display font-bold text-white drop-shadow-lg flex items-center gap-2">
+              <h3 className="text-xl md:text-2xl font-serif font-bold text-white drop-shadow-lg flex items-center gap-2">
                 {dest.city} <span className="text-xl">{dest.flag}</span>
               </h3>
             </div>
 
             {/* Property count badge */}
             <div className="absolute bottom-5 left-5 z-10">
-              <span className="bg-white/90 backdrop-blur-sm text-gray-800 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+              <span className="bg-ink-soft/90 backdrop-blur-sm text-ivory text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
                 {dest.properties} properties
               </span>
             </div>
@@ -107,14 +107,14 @@ const TrendingDestinations = () => {
             
             {/* City name with flag */}
             <div className="absolute top-4 left-4 z-10">
-              <h3 className="text-lg font-display font-bold text-white drop-shadow-lg flex items-center gap-2">
+              <h3 className="text-lg font-serif font-bold text-white drop-shadow-lg flex items-center gap-2">
                 {dest.city} <span className="text-base">{dest.flag}</span>
               </h3>
             </div>
 
             {/* Property count badge */}
             <div className="absolute bottom-4 left-4 z-10">
-              <span className="bg-white/90 backdrop-blur-sm text-gray-800 text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+              <span className="bg-ink-soft/90 backdrop-blur-sm text-ivory text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
                 {dest.properties} properties
               </span>
             </div>
