@@ -27,6 +27,7 @@ const Sidebar = () => {
 
   const menuItems = [
     { name: 'Dashboard', path: '/admin', icon: HiOutlineViewGrid, end: true },
+    { name: 'Assistant', path: '/admin/assistant', icon: HiOutlineSparkles },
     { name: 'Properties', path: '/admin/properties', icon: HiOutlineHome },
     { name: 'Bookings', path: '/admin/bookings', icon: HiOutlineCalendar },
     { name: 'Calendar', path: '/admin/calendar', icon: HiOutlineClock },

@@ -5,6 +5,9 @@ const userSchema = require('./models/authSchema')
 const categorySchema = require('./models/categorySchema')
 const amenitySchema = require('./models/amenitySchema')
 const propertySchema = require('./models/propertySchema')
+const bookingSchema = require('./models/bookingSchema')
+const paymentSchema = require('./models/paymentSchema')
+const payoutSchema = require('./models/payoutSchema')
 
 // ====== Known admin, so the panel is always reachable in a fresh environment
 const ADMIN = {
@@ -301,6 +304,127 @@ const PROPERTIES = [
     },
 ]
 
+
+// ====== Booking history
+// Without past stays the dashboard and the assistant have nothing to reason about,
+// so seed a spread that makes the performance gap between properties visible:
+// a few strong performers, a few quiet ones, some refunds and a cancellation.
+const DAY = 24 * 60 * 60 * 1000
+
+// Occupancy weight per listing title fragment - higher means more past stays
+const DEMAND = {
+    'Brooklyn': 0.9,
+    'Skyline': 0.8,
+    'Canal House': 0.75,
+    'Notting Hill': 0.7,
+    'Marina Tower': 0.6,
+    'Barcelona': 0.55,
+    'Minimalist Loft': 0.5,
+    'Shibuya': 0.45,
+    'Beachfront Villa': 0.4,
+    'Palm Grove': 0.35,
+    'Riverside': 0.3,
+    'Tea Estate': 0.25,
+    'Grand Harbour': 0.2,
+    'Pine Forest': 0.12,
+}
+
+const demandFor = (title) => {
+    const key = Object.keys(DEMAND).find((fragment) => title.includes(fragment))
+    return key ? DEMAND[key] : 0.3
+}
+
+const seedBookings = async (host, guest) => {
+    // A handful of bookings may exist from manual testing - that is not history.
+    // Only skip once there is a real spread to reason about.
+    const existing = await bookingSchema.countDocuments({ host: host._id })
+    if (existing >= 40) return { created: 0, skipped: existing }
+
+    const properties = await propertySchema.find({ host: host._id, status: 'published' })
+    const now = Date.now()
+    let created = 0
+
+    for (const property of properties) {
+        const demand = demandFor(property.title)
+        // Roughly one stay per fortnight at full demand, over the last six months
+        const stays = Math.round(12 * demand)
+
+        for (let index = 0; index < stays; index++) {
+            const nights = 2 + ((index * 3) % 6)
+            // Spread backwards from today, leaving the near future open for campaigns
+            const startOffset = 175 - Math.round((index / Math.max(1, stays)) * 170)
+            const checkIn = new Date(now - startOffset * DAY)
+            const checkOut = new Date(checkIn.getTime() + nights * DAY)
+
+            const overlap = await bookingSchema.findOne({
+                property: property._id,
+                checkInDate: { $lt: checkOut },
+                checkOutDate: { $gt: checkIn },
+            })
+            if (overlap) continue
+
+            const gross = property.pricePerNight * nights
+            const taxAmount = Math.round(gross * ((property.taxRatePercent || 0) / 100) * 100) / 100
+            const totalAmount = Math.round((gross + (property.cleaningFee || 0) + (property.serviceFee || 0) + taxAmount) * 100) / 100
+
+            // One stay in eight is cancelled, one in ten is partly refunded
+            const isCancelled = index % 8 === 7
+            const refundAmount = !isCancelled && index % 10 === 9 ? Math.round(totalAmount * 0.5 * 100) / 100 : 0
+
+            const booking = await bookingSchema.create({
+                guest: guest._id,
+                host: host._id,
+                property: property._id,
+                rentalType: 'short',
+                checkInDate: checkIn,
+                checkOutDate: checkOut,
+                totalNights: nights,
+                guestsCount: 1 + (index % 3),
+                pricePerNight: property.pricePerNight,
+                cleaningFee: property.cleaningFee,
+                serviceFee: property.serviceFee,
+                taxAmount,
+                totalAmount,
+                refundAmount,
+                cancellationPolicy: property.cancellationPolicy || 'moderate',
+                bookingStatus: isCancelled ? 'cancelled' : 'completed',
+                paymentStatus: isCancelled ? 'refunded' : 'paid',
+                createdAt: new Date(checkIn.getTime() - (10 + (index % 25)) * DAY),
+            })
+
+            if (!isCancelled) {
+                await paymentSchema.create({
+                    booking: booking._id,
+                    user: guest._id,
+                    transactionId: `pi_seed_${booking._id}`,
+                    paymentMethod: 'stripe',
+                    amount: totalAmount,
+                    currency: property.currency || 'USD',
+                    status: refundAmount > 0 ? 'partially_refunded' : 'paid',
+                    refundedAmount: refundAmount,
+                })
+
+                const payable = Math.max(0, totalAmount - taxAmount)
+                const platformFee = Math.round(payable * 0.12 * 100) / 100
+                await payoutSchema.create({
+                    host: host._id,
+                    booking: booking._id,
+                    grossAmount: Math.round(payable * 100) / 100,
+                    platformFee,
+                    netAmount: Math.round((payable - platformFee) * 100) / 100,
+                    releaseDate: new Date(checkIn.getTime() + DAY),
+                    status: 'paid',
+                    createdAt: booking.createdAt,
+                })
+            }
+
+            created++
+        }
+    }
+
+    return { created, skipped: 0 }
+}
+
 const seed = async () => {
     try {
         await dbConfig()
@@ -381,6 +505,10 @@ const seed = async () => {
             created++
         }
         console.log(`properties created: ${created}, horizon config updated: ${updated}`)
+
+        // ====== Booking history
+        const history = await seedBookings(host, admin)
+        console.log(`bookings seeded: ${history.created}${history.skipped ? ` (skipped, ${history.skipped} already present)` : ''}`)
 
         const total = await propertySchema.countDocuments({ status: 'published' })
         console.log(`published properties in DB: ${total}`)

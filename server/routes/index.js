@@ -17,6 +17,7 @@ const pricingRuleRoute = require('./pricingRule')
 const payoutRoute = require('./payout')
 const currencyRoute = require('./currency')
 const couponRoute = require('./coupon')
+const agentRoute = require('./agent')
 
 // root endpoints for checking server,Server starting or not.
 route.get('/',(req,res)=>{
@@ -40,6 +41,7 @@ route.use('/pricing-rule',pricingRuleRoute)
 route.use('/payout',payoutRoute)
 route.use('/currency',currencyRoute)
 route.use('/coupon',couponRoute)
+route.use('/agent',agentRoute)
 
 
 // for any invalid endpoints or route

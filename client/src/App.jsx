@@ -43,6 +43,7 @@ import AdminCoupons from './pages/admin/Coupons'
 import AdminPayouts from './pages/admin/Payouts'
 import AdminCalendar from './pages/admin/Calendar'
 import AdminApplications from './pages/admin/Applications'
+import AdminAssistant from './pages/admin/Assistant'
 import AdminPricingRules from './pages/admin/PricingRules'
 import AddProperty from './pages/admin/AddProperty'
 import EditProperty from './pages/admin/EditProperty'
@@ -72,6 +73,7 @@ const App = () => {
             <Route path="bookings" element={<AdminBookings />} />
             <Route path="calendar" element={<AdminCalendar />} />
             <Route path="applications" element={<AdminApplications />} />
+            <Route path="assistant" element={<AdminAssistant />} />
             <Route path="pricing-rules" element={<AdminPricingRules />} />
             <Route path="messages" element={<AdminMessages />} />
             <Route path="analytics" element={<AdminAnalytics />} />
