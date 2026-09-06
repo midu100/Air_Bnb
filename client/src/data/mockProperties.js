@@ -42,7 +42,7 @@ export const MOCK_PROPERTIES = [
       'Outdoor Hot Tub',
       'Private Deck & Firepit'
     ],
-    panoramaImage: 'https://threejs.org/examples/textures/2294472375_24a3b8ef46_o.jpg'
+    panoramaImage: '/panorama/lounge-360.jpg'
   },
   {
     id: 2,
@@ -87,7 +87,7 @@ export const MOCK_PROPERTIES = [
       'Private Chef Availability',
       'CCTV Surveillance'
     ],
-    panoramaImage: 'https://threejs.org/examples/textures/2294472375_24a3b8ef46_o.jpg'
+    panoramaImage: '/panorama/lounge-360.jpg'
   },
   {
     id: 3,
@@ -132,7 +132,7 @@ export const MOCK_PROPERTIES = [
       '24/7 Estate Security',
       'Helper Quarters'
     ],
-    panoramaImage: 'https://threejs.org/examples/textures/2294472375_24a3b8ef46_o.jpg'
+    panoramaImage: '/panorama/lounge-360.jpg'
   },
   {
     id: 4,
@@ -177,7 +177,7 @@ export const MOCK_PROPERTIES = [
       'CCTV Surveillance & Guard Room',
       'Est. 2023 Architect Award Winner'
     ],
-    panoramaImage: 'https://threejs.org/examples/textures/2294472375_24a3b8ef46_o.jpg'
+    panoramaImage: '/panorama/lounge-360.jpg'
   },
   {
     id: 5,
@@ -222,7 +222,7 @@ export const MOCK_PROPERTIES = [
       'Outdoor Firepit & Cooking Area',
       'Desert Hiking Access'
     ],
-    panoramaImage: 'https://threejs.org/examples/textures/2294472375_24a3b8ef46_o.jpg'
+    panoramaImage: '/panorama/lounge-360.jpg'
   },
   {
     id: 6,
@@ -267,7 +267,7 @@ export const MOCK_PROPERTIES = [
       'CCTV Surveillance Guard System',
       'Award-winning Architecture'
     ],
-    panoramaImage: 'https://threejs.org/examples/textures/2294472375_24a3b8ef46_o.jpg'
+    panoramaImage: '/panorama/lounge-360.jpg'
   },
   {
     id: 7,
@@ -312,7 +312,7 @@ export const MOCK_PROPERTIES = [
       'Secured Entrance with Intercom',
       'Community Roof Deck'
     ],
-    panoramaImage: 'https://threejs.org/examples/textures/2294472375_24a3b8ef46_o.jpg'
+    panoramaImage: '/panorama/lounge-360.jpg'
   },
   {
     id: 8,
@@ -357,6 +357,6 @@ export const MOCK_PROPERTIES = [
       'Gothic Arched Windows & Stone Fireplace',
       'On-site Castle Caretaker Support'
     ],
-    panoramaImage: 'https://threejs.org/examples/textures/2294472375_24a3b8ef46_o.jpg'
+    panoramaImage: '/panorama/lounge-360.jpg'
   }
 ]

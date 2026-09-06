@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
 
 // ====== Equirectangular panorama on a full-screen quad.
 // The ray is built in camera space, rotated by pitch then yaw, and mapped back
@@ -46,10 +46,14 @@ const FRAGMENT_SHADER = `
     float longitude = atan(ray.x, -ray.z);
     float latitude = acos(ray.y);
 
-    vec4 colour = texture2D(u_texture, vec2((longitude + PI) / (2.0 * PI), latitude / PI));
+    vec3 room = texture2D(u_texture, vec2((longitude + PI) / (2.0 * PI), latitude / PI)).rgb;
 
-    // Fade toward the ink ground so the room can arrive out of darkness
-    gl_FragColor = vec4(mix(vec3(0.055, 0.098, 0.094), colour.rgb, u_fade), 1.0);
+    // A soft vignette keeps the eye in the middle of the room, where the copy sits
+    float vignette = 1.0 - 0.32 * dot(v_uv, v_uv);
+    room *= vignette;
+
+    // Fade up out of the cream ground so the room arrives rather than cuts in
+    gl_FragColor = vec4(mix(vec3(0.961, 0.945, 0.910), room, u_fade), 1.0);
   }
 `
 
@@ -66,18 +70,22 @@ const compile = (gl, type, source) => {
 }
 
 /**
- * ScrollPanorama — a room you fall into.
+ * ScrollPanorama - a room you fall into.
  *
  * `progressRef` is a live 0..1 value the parent drives from scroll. Reading it
  * inside the render loop rather than through props keeps every frame off the
  * React render path, which is what makes the motion feel attached to the wheel.
+ *
+ * The reveal is written straight to `canvas.style.opacity` rather than held in
+ * state. Under StrictMode the effect runs twice, and a `setReady` from the pass
+ * that gets torn down is dropped - which left the canvas invisible while the
+ * shader was drawing the room perfectly well behind it.
  */
 const ScrollPanorama = ({ imageSrc, progressRef, interactive = false, className = '' }) => {
   const canvasRef = useRef(null)
-  const stateRef = useRef({ gl: null, program: null, texture: null, frame: 0 })
+  const frameRef = useRef(0)
   const dragRef = useRef({ active: false, x: 0, y: 0, yaw: 0, pitch: 0 })
   const offsetRef = useRef({ yaw: 0, pitch: 0 })
-  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -94,6 +102,10 @@ const ScrollPanorama = ({ imageSrc, progressRef, interactive = false, className 
     gl.attachShader(program, vertex)
     gl.attachShader(program, fragment)
     gl.linkProgram(program)
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.log('panorama link failed:', gl.getProgramInfoLog(program))
+      return
+    }
     gl.useProgram(program)
 
     const buffer = gl.createBuffer()
@@ -113,22 +125,30 @@ const ScrollPanorama = ({ imageSrc, progressRef, interactive = false, className 
       fade: gl.getUniformLocation(program, 'u_fade'),
     }
 
-    // A single dark pixel stands in until the photograph arrives
+    // A single cream pixel stands in until the photograph arrives, so a slow
+    // network shows the page's own ground rather than a dark hole
     const texture = gl.createTexture()
     gl.bindTexture(gl.TEXTURE_2D, texture)
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([14, 25, 24, 255]))
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([245, 241, 232, 255]))
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 
-    stateRef.current = { gl, program, texture, uniforms, frame: 0 }
+    // An async image load can outlive the effect, so a late callback must not
+    // upload into a texture this cleanup has already deleted
+    let alive = true
 
     const image = new Image()
     image.crossOrigin = 'anonymous'
     image.onload = () => {
+      if (!alive) return
       gl.bindTexture(gl.TEXTURE_2D, texture)
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image)
-      setReady(true)
+      canvas.style.opacity = '1'
+    }
+    image.onerror = () => {
+      console.log('panorama image failed to load:', imageSrc)
     }
     image.src = imageSrc
 
@@ -145,9 +165,11 @@ const ScrollPanorama = ({ imageSrc, progressRef, interactive = false, className 
     const render = () => {
       const progress = progressRef?.current ?? 1
 
-      // Far outside the room the view is narrow and dark; entering widens it
+      // Far outside the room the view is narrow; entering widens it
       const fov = 42 + progress * 58
-      const drift = progress * 0.55
+      // Arrive facing the middle of the panorama - the windows and the garden -
+      // rather than the corner the tungsten lamps wash yellow
+      const drift = (progress - 1) * 0.55
       const fade = Math.min(1, Math.max(0, (progress - 0.05) / 0.45))
 
       gl.useProgram(program)
@@ -162,15 +184,17 @@ const ScrollPanorama = ({ imageSrc, progressRef, interactive = false, className 
       gl.uniform1i(uniforms.texture, 0)
 
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
-      stateRef.current.frame = requestAnimationFrame(render)
+      frameRef.current = requestAnimationFrame(render)
     }
     render()
 
     return () => {
-      cancelAnimationFrame(stateRef.current.frame)
+      alive = false
+      cancelAnimationFrame(frameRef.current)
       window.removeEventListener('resize', resize)
       gl.deleteProgram(program)
       gl.deleteTexture(texture)
+      gl.deleteBuffer(buffer)
     }
   }, [imageSrc, progressRef])
 
@@ -202,13 +226,14 @@ const ScrollPanorama = ({ imageSrc, progressRef, interactive = false, className 
   return (
     <canvas
       ref={canvasRef}
+      style={{ opacity: 0 }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
       onPointerLeave={endDrag}
-      className={`h-full w-full ${interactive ? 'cursor-grab active:cursor-grabbing' : ''} ${
-        ready ? 'opacity-100' : 'opacity-0'
-      } transition-opacity duration-700 ${className}`}
+      className={`h-full w-full transition-opacity duration-700 ${
+        interactive ? 'cursor-grab active:cursor-grabbing' : ''
+      } ${className}`}
     />
   )
 }
