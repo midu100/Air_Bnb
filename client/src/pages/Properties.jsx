@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useSearchParams } from 'react-router'
 import { useSearchPropertiesQuery } from '../store/api/propertyApi'
 import { useGetCategoriesQuery } from '../store/api/categoryApi'
 import PropertyCard from '../components/PropertyCard'
 
-const PAGE_SIZE = 12
+const PAGE_SIZE = 6
 
 // ====== The three rental horizons, each with its own price unit and sensible slider range
 const HORIZONS = [
@@ -112,6 +112,24 @@ const Properties = () => {
   const properties = data?.properties || []
   const total = data?.total || 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+
+  // First, last, current and its neighbours. Everything else is elided, so the
+  // row stays one line however many pages the search turns up.
+  const pageNumbers = useMemo(() => {
+    const wanted = new Set([1, totalPages, page, page - 1, page + 1])
+    return [...wanted].filter((number) => number >= 1 && number <= totalPages).sort((a, b) => a - b)
+  }, [page, totalPages])
+
+  // Changing page while looking at the foot of the list would otherwise leave
+  // the reader at the bottom of a fresh set of results
+  const resultsRef = useRef(null)
+
+  const goToPage = (next) => {
+    const target = Math.min(totalPages, Math.max(1, next))
+    if (target === page) return
+    setPage(target)
+    resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   const { data: catData } = useGetCategoriesQuery()
   const categoriesList = catData?.category || []
@@ -256,7 +274,10 @@ const Properties = () => {
             </div>
           ) : properties.length > 0 ? (
             <>
-              <div className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 transition-opacity ${isFetching ? 'opacity-60' : 'opacity-100'}`}>
+              <div
+                ref={resultsRef}
+                className={`grid grid-cols-1 gap-6 scroll-mt-28 md:grid-cols-2 xl:grid-cols-3 ${isFetching ? 'opacity-60' : 'opacity-100'} transition-opacity`}
+              >
                 {properties.map((prop) => (
                   <PropertyCard key={prop._id} property={prop} rentalType={rentalType} />
                 ))}
@@ -264,27 +285,45 @@ const Properties = () => {
 
               {/* ====== Pagination ====== */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-10">
+                <nav aria-label="Search results pages" className="mt-12 flex flex-wrap items-center justify-center gap-2">
                   <button
-                    onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                    onClick={() => goToPage(page - 1)}
                     disabled={page === 1}
-                    className="px-4 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    className="cursor-pointer rounded-lg border border-espresso-line bg-white px-4 py-2.5 text-[12.5px] font-medium text-espresso transition-colors duration-300 hover:border-espresso disabled:cursor-not-allowed disabled:border-espresso-line/60 disabled:text-espresso-soft/30"
                   >
                     Previous
                   </button>
 
-                  <span className="text-xs font-bold text-gray-500 px-3">
-                    Page {page} of {totalPages}
-                  </span>
+                  {pageNumbers.map((number, index) => {
+                    const previous = pageNumbers[index - 1]
+                    const isGap = previous && number - previous > 1
+
+                    return (
+                      <React.Fragment key={number}>
+                        {isGap && <span className="px-1 text-[12.5px] text-espresso-soft/40">...</span>}
+                        <button
+                          onClick={() => goToPage(number)}
+                          aria-current={number === page ? 'page' : undefined}
+                          className={`h-10 w-10 cursor-pointer rounded-lg border text-[12.5px] font-medium transition-colors duration-300 ${
+                            number === page
+                              ? 'border-espresso bg-espresso text-linen'
+                              : 'border-espresso-line bg-white text-espresso hover:border-espresso'
+                          }`}
+                        >
+                          {number}
+                        </button>
+                      </React.Fragment>
+                    )
+                  })}
 
                   <button
-                    onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                    onClick={() => goToPage(page + 1)}
                     disabled={page === totalPages}
-                    className="px-4 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    className="cursor-pointer rounded-lg border border-espresso-line bg-white px-4 py-2.5 text-[12.5px] font-medium text-espresso transition-colors duration-300 hover:border-espresso disabled:cursor-not-allowed disabled:border-espresso-line/60 disabled:text-espresso-soft/30"
                   >
                     Next
                   </button>
-                </div>
+                </nav>
               )}
             </>
           ) : (
