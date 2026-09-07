@@ -5,7 +5,14 @@ import { FiArrowDown, FiArrowUpRight } from 'react-icons/fi'
 import { useGetFeaturedPropertiesQuery } from '../store/api/propertyApi'
 
 const FALLBACK_EXTERIOR =
-  'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=2400&h=1600&fit=crop&q=85'
+  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=2400&h=1600&fit=crop&q=85'
+
+// A listing's thumbnail is sized for a card. Filling a retina screen with it
+// wants roughly twice that, and the width is a query parameter on these.
+const atHeroResolution = (url) => {
+  if (typeof url !== 'string' || !url.includes('images.unsplash.com')) return url
+  return `${url.split('?')[0]}?w=3200&q=88&auto=format&fit=crop`
+}
 
 // A 0..1 ramp between two points on the scroll, eased so nothing snaps
 const ramp = (value, from, to) => {
@@ -39,7 +46,7 @@ const HeroSection = () => {
   // platform has one to show
   const featured = featuredData?.properties || []
   const showcase = featured.find((home) => ['House', 'Villa'].includes(home.propertyType)) || featured[0] || null
-  const exterior = showcase?.thumbnail || FALLBACK_EXTERIOR
+  const exterior = atHeroResolution(showcase?.thumbnail || FALLBACK_EXTERIOR)
 
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end end'] })
 
