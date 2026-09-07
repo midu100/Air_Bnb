@@ -35,8 +35,10 @@ const PropertyMap = ({ properties = [], rentalType = 'short', loading = false })
       worldCopyJump: true,
     })
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
+    // CARTO now stamps "API KEY REQUIRED" across its free basemap, so the
+    // map is drawn on OpenStreetMap's own tiles instead
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
       maxZoom: 19,
     }).addTo(map)
 

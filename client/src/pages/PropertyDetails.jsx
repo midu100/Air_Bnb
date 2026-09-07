@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
+import PropertyLocationMap from '../components/PropertyLocationMap'
 import { useParams, Link, useNavigate } from 'react-router'
 import { useDispatch, useSelector } from 'react-redux'
 import { MOCK_PROPERTIES } from '../data/mockProperties'
@@ -10,6 +11,9 @@ import { selectIsAuthenticated } from '../store/slices/authSlice'
 import toast from 'react-hot-toast'
 
 // Formats a Date as YYYY-MM-DD in local time (toISOString would shift across timezones)
+// How each horizon reads on a listing badge
+const HORIZON_TAGS = { short: 'By the night', mid: 'By the month', long: 'On a lease' }
+
 const toDateStr = (date) => {
   const month = `${date.getMonth() + 1}`.padStart(2, '0')
   const day = `${date.getDate()}`.padStart(2, '0')
@@ -17,7 +21,7 @@ const toDateStr = (date) => {
 }
 
 const FloorPlanSVG = () => (
-  <svg viewBox="0 0 800 500" className="w-full h-full text-gray-600 bg-gray-50 rounded-2xl md:rounded-3xl p-6 sm:p-8" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg viewBox="0 0 800 500" className="w-full h-full text-espresso-soft bg-cream rounded-2xl md:rounded-3xl p-6 sm:p-8" fill="none" stroke="currentColor" strokeWidth="2">
     {/* Outer walls */}
     <rect x="50" y="50" width="700" height="400" rx="12" strokeWidth="4" stroke="currentColor" />
     
@@ -53,45 +57,6 @@ const FloorPlanSVG = () => (
   </svg>
 )
 
-const MockMap = ({ location }) => (
-  <div className="relative w-full h-[350px] bg-sky-50 rounded-3xl overflow-hidden border border-gray-100 shadow-md">
-    {/* Map grid lines */}
-    <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#0ea5e9_1.2px,transparent_1.2px)] [background-size:20px_20px]"></div>
-    
-    {/* Rivers and lands patterns */}
-    <div className="absolute top-1/3 left-0 w-full h-16 bg-sky-200/40 transform -rotate-3"></div>
-    <div className="absolute top-1/2 left-0 w-full h-12 bg-sky-100/50 transform rotate-6"></div>
-    <div className="absolute right-20 top-0 w-36 h-full bg-emerald-50/30 transform -skew-x-12"></div>
-    
-    {/* Roads */}
-    <div className="absolute top-16 left-0 w-full h-5 bg-white shadow-xs"></div>
-    <div className="absolute top-0 left-1/4 w-8 h-full bg-white shadow-xs"></div>
-    <div className="absolute top-0 left-3/4 w-6 h-full bg-white shadow-xs"></div>
-    <div className="absolute bottom-20 left-0 w-full h-6 bg-white shadow-xs"></div>
-
-    {/* Location Pin */}
-    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-      <div className="absolute w-12 h-12 bg-rose-500/25 rounded-full animate-ping"></div>
-      <div className="absolute w-6 h-6 bg-rose-500/45 rounded-full animate-pulse"></div>
-      
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-rose-500 drop-shadow-md z-10" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 0L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-      </svg>
-    </div>
-
-    {/* Zoom Controls */}
-    <div className="absolute bottom-4 left-4 flex flex-col gap-1.5 z-10">
-      <button className="w-9 h-9 rounded-xl bg-white shadow-md text-gray-800 font-bold hover:bg-gray-50 flex items-center justify-center transition-all select-none hover:scale-105 active:scale-95">+</button>
-      <button className="w-9 h-9 rounded-xl bg-white shadow-md text-gray-800 font-bold hover:bg-gray-50 flex items-center justify-center transition-all select-none hover:scale-105 active:scale-95">-</button>
-    </div>
-
-    {/* Tag overlay */}
-    <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-xs px-3.5 py-2 rounded-xl border border-gray-100 shadow-md text-xs font-semibold text-gray-700 flex items-center gap-1.5">
-      <span className="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
-      {location}
-    </div>
-  </div>
-)
 
 const PropertyDetails = () => {
   const { id } = useParams()
@@ -105,7 +70,6 @@ const PropertyDetails = () => {
   const [activeTab, setActiveTab] = useState('gallery') // gallery, smartVIEW, video, layout
   const [currentImgIndex, setCurrentImgIndex] = useState(0)
   const [isSaved, setIsSaved] = useState(false)
-  const [copiedId, setCopiedId] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
 
   // Booking details & calendar state (Preserving original functional features)
@@ -138,8 +102,10 @@ const PropertyDetails = () => {
   const mockProperty = MOCK_PROPERTIES.find((p) => p.id === parseInt(id, 10))
 
   // Merge: API data takes priority, mock data as fallback for fields not in DB
+  // A real listing is never merged with a mock one. `parseInt` on a Mongo id
+  // returns whatever digits happen to lead it, so every real home was picking
+  // up an unrelated mock listing's square footage, balconies and garage.
   const property = apiProperty ? {
-    ...mockProperty,
     ...apiProperty,
     // Map backend fields to the field names used in this component
     id: apiProperty._id || id,
@@ -155,6 +121,33 @@ const PropertyDetails = () => {
     serviceCharge: apiProperty.serviceFee || mockProperty?.serviceCharge || 0,
     isGuestFavorite: apiProperty.isFeatured || mockProperty?.isGuestFavorite || false,
   } : mockProperty
+
+  // ====== The facts this listing actually records
+  const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`
+
+  const specs = useMemo(() => {
+    if (!property) return []
+
+    const rows = [
+      { label: 'Guests', value: plural(property.maxGuests || 1, 'guest') },
+      { label: 'Bedrooms', value: plural(property.bedrooms ?? property.beds ?? 0, 'bedroom') },
+      { label: 'Beds', value: plural(property.beds ?? 0, 'bed') },
+      { label: 'Bathrooms', value: plural(property.bathrooms ?? 0, 'bathroom') },
+      { label: 'Property type', value: property.propertyType || 'Home' },
+      { label: 'Furnishing', value: property.furnished ? 'Furnished' : 'Unfurnished' },
+    ]
+
+    if (property.utilitiesIncluded) rows.push({ label: 'Utilities', value: 'Included in the rent' })
+    if (property.workspace) rows.push({ label: 'Workspace', value: 'Desk and chair' })
+    if (property.securityDeposit > 0) {
+      rows.push({ label: 'Deposit', value: `$${property.securityDeposit.toLocaleString('en-US')}` })
+    }
+    if (property.minStayNights > 1) {
+      rows.push({ label: 'Minimum stay', value: plural(property.minStayNights, 'night') })
+    }
+
+    return rows
+  }, [property])
 
   // Fetch real booking availability to compute unavailable dates
   const { data: availData } = useGetAvailabilityQuery(id, { skip: !apiProperty })
@@ -188,7 +181,7 @@ const PropertyDetails = () => {
   if (isLoading) {
     return (
       <div className="pt-32 pb-24 text-center font-sans">
-        <div className="animate-pulse text-gray-400 font-bold text-sm">Loading property details...</div>
+        <div className="animate-pulse text-espresso-soft/55 font-bold text-sm">Loading property details...</div>
       </div>
     )
   }
@@ -196,8 +189,8 @@ const PropertyDetails = () => {
   if (!property) {
     return (
       <div className="pt-32 pb-24 text-center font-sans">
-        <h2 className="text-xl font-bold text-gray-800">Property not found</h2>
-        <Link to="/properties" className="text-brand text-sm hover:underline mt-2 inline-block">
+        <h2 className="text-xl font-bold text-espresso">Property not found</h2>
+        <Link to="/properties" className="text-espresso text-sm hover:underline mt-2 inline-block">
           Go back to exploring stays
         </Link>
       </div>
@@ -422,27 +415,21 @@ const PropertyDetails = () => {
   const isSelected = (day) => {
     if (!day) return false
     const dateStr = dayToDateStr(day)
-    if (checkInDate === dateStr) return 'bg-rose-500 text-white rounded-l-full'
-    if (checkOutDate === dateStr) return 'bg-rose-500 text-white rounded-r-full'
+    if (checkInDate === dateStr) return 'bg-espresso text-white rounded-l-full'
+    if (checkOutDate === dateStr) return 'bg-espresso text-white rounded-r-full'
 
     if (checkInDate && checkOutDate) {
       const current = new Date(dateStr)
       const start = new Date(checkInDate)
       const end = new Date(checkOutDate)
       if (current > start && current < end) {
-        return 'bg-rose-50 text-rose-600'
+        return 'bg-cream text-bronze'
       }
     }
     return ''
   }
 
   // Copy helpers
-  const copyPropertyId = () => {
-    navigator.clipboard.writeText(property.propertyId)
-    setCopiedId(true)
-    setTimeout(() => setCopiedId(false), 2000)
-  }
-
   const copyShareLink = () => {
     navigator.clipboard.writeText(window.location.href)
     setCopiedLink(true)
@@ -471,7 +458,7 @@ const PropertyDetails = () => {
   return (
     <div className="pt-24 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 font-sans">
       {/* Back Link */}
-      <Link to="/properties" className="text-xs text-gray-500 hover:text-brand flex items-center gap-1.5 mb-6 group transition-colors">
+      <Link to="/properties" className="text-xs text-espresso-soft/75 hover:text-espresso flex items-center gap-1.5 mb-6 group transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
@@ -485,7 +472,7 @@ const PropertyDetails = () => {
         <div className="lg:col-span-2 space-y-8 animate-fade-in-up">
           
           {/* Main Visual Display Screen */}
-          <div className="relative aspect-video rounded-3xl overflow-hidden border border-gray-100 shadow-xl bg-gray-900 group">
+          <div className="relative aspect-video rounded-3xl overflow-hidden border border-espresso-line/70 shadow-xl bg-gray-900 group">
             
             {/* 1. Gallery Slider Mode */}
             {activeTab === 'gallery' && (
@@ -501,7 +488,7 @@ const PropertyDetails = () => {
                   <>
                     <button
                       onClick={handlePrevImage}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/95 hover:bg-white text-gray-800 shadow-md flex items-center justify-center hover:scale-105 active:scale-95 transition-all select-none z-10 cursor-pointer"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/95 hover:bg-white text-espresso shadow-md flex items-center justify-center hover:scale-105 active:scale-95 transition-all select-none z-10 cursor-pointer"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -509,7 +496,7 @@ const PropertyDetails = () => {
                     </button>
                     <button
                       onClick={handleNextImage}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/95 hover:bg-white text-gray-800 shadow-md flex items-center justify-center hover:scale-105 active:scale-95 transition-all select-none z-10 cursor-pointer"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/95 hover:bg-white text-espresso shadow-md flex items-center justify-center hover:scale-105 active:scale-95 transition-all select-none z-10 cursor-pointer"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -548,7 +535,7 @@ const PropertyDetails = () => {
 
             {/* 4. Floor Layout Blueprint Mode */}
             {activeTab === 'layout' && (
-              <div className="w-full h-full flex items-center justify-center bg-gray-50">
+              <div className="w-full h-full flex items-center justify-center bg-cream">
                 <FloorPlanSVG />
               </div>
             )}
@@ -561,7 +548,7 @@ const PropertyDetails = () => {
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className={`h-5.5 w-5.5 transition-colors ${isSaved ? 'fill-rose-500 text-rose-500' : 'text-gray-500 hover:text-rose-500'}`}
+                className={`h-5.5 w-5.5 transition-colors ${isSaved ? 'fill-bronze text-bronze' : 'text-espresso-soft/75 hover:text-bronze'}`}
                 fill={isSaved ? 'currentColor' : 'none'}
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -575,7 +562,7 @@ const PropertyDetails = () => {
             {activeTab !== 'smartVIEW' && (
               <button
                 onClick={() => setActiveTab('smartVIEW')}
-                className="absolute top-4 right-4 bg-white/95 hover:bg-white text-brand border border-rose-100 font-display font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-full shadow-md flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-all cursor-pointer z-10"
+                className="absolute top-4 right-4 bg-white/95 hover:bg-white text-espresso border border-espresso-line font-display font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-full shadow-md flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-all cursor-pointer z-10"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -587,22 +574,22 @@ const PropertyDetails = () => {
 
             {/* Guest Favorite Badge */}
             {property.isGuestFavorite && activeTab === 'gallery' && (
-              <span className="absolute bottom-4 right-4 bg-white/95 text-brand text-[10px] font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full border border-rose-100 shadow-md">
+              <span className="absolute bottom-4 right-4 bg-white/95 text-espresso text-[10px] font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full border border-espresso-line shadow-md">
                 Guest Favorite
               </span>
             )}
           </div>
 
           {/* Media Selection Navigation Tabs Bar */}
-          <div className="flex flex-wrap items-center gap-2 border-b border-gray-150 pb-4">
+          <div className="flex flex-wrap items-center gap-2 border-b border-espresso-line pb-4">
             
             {/* Gallery Tab */}
             <button
               onClick={() => setActiveTab('gallery')}
               className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full border transition-all cursor-pointer ${
                 activeTab === 'gallery'
-                  ? 'bg-rose-50 border-rose-200 text-brand'
-                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                  ? 'bg-cream border-bronze/35 text-espresso'
+                  : 'bg-white border-espresso-line text-espresso-soft hover:bg-cream'
               }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -616,8 +603,8 @@ const PropertyDetails = () => {
               onClick={() => setActiveTab('smartVIEW')}
               className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full border transition-all cursor-pointer ${
                 activeTab === 'smartVIEW'
-                  ? 'bg-rose-50 border-rose-200 text-brand shadow-xs'
-                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                  ? 'bg-cream border-bronze/35 text-espresso shadow-xs'
+                  : 'bg-white border-espresso-line text-espresso-soft hover:bg-cream'
               }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -631,8 +618,8 @@ const PropertyDetails = () => {
               onClick={() => setActiveTab('video')}
               className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full border transition-all cursor-pointer ${
                 activeTab === 'video'
-                  ? 'bg-rose-50 border-rose-200 text-brand'
-                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                  ? 'bg-cream border-bronze/35 text-espresso'
+                  : 'bg-white border-espresso-line text-espresso-soft hover:bg-cream'
               }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -646,8 +633,8 @@ const PropertyDetails = () => {
               onClick={() => setActiveTab('layout')}
               className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full border transition-all cursor-pointer ${
                 activeTab === 'layout'
-                  ? 'bg-rose-50 border-rose-200 text-brand'
-                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                  ? 'bg-cream border-bronze/35 text-espresso'
+                  : 'bg-white border-espresso-line text-espresso-soft hover:bg-cream'
               }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -659,7 +646,7 @@ const PropertyDetails = () => {
             {/* Additional Features Anchor Link */}
             <button
               onClick={() => handleScrollToSection('additional-features-section')}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full border bg-white border-gray-200 text-gray-600 hover:bg-gray-50 transition-all cursor-pointer ml-auto"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full border bg-white border-espresso-line text-espresso-soft hover:bg-cream transition-all cursor-pointer ml-auto"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
@@ -669,241 +656,111 @@ const PropertyDetails = () => {
           </div>
 
           {/* About this Property Details Box */}
-          <div className="bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
-            <h2 className="text-xl sm:text-2xl font-display font-extrabold text-gray-900 flex items-center gap-2">
+          <div className="bg-white border border-espresso-line/70 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+            <h2 className="text-xl sm:text-2xl font-display font-extrabold text-espresso flex items-center gap-2">
               About this Property
             </h2>
 
-            {/* Specifications Details Grid (11 Attributes matching reference images) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              
-              {/* 1. Bedrooms */}
-              <div className="border border-gray-100 hover:border-rose-100 hover:bg-rose-50/20 p-3.5 rounded-2xl flex items-center gap-3 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center flex-shrink-0 text-brand">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M3 18h18M3 6h6v4H3V6zm12 0h6v4h-6V6z" />
-                  </svg>
+            {/* What the listing actually records.
+                This grid used to show square footage, balconies, a garage and a
+                construction year, none of which a listing carries. They came
+                from a mock property picked with parseInt on a Mongo id, so
+                every real home was described with an unrelated one's numbers. */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {specs.map((spec) => (
+                <div key={spec.label} className="rounded-xl border border-espresso-line/70 bg-linen px-4 py-3.5">
+                  <p className="text-[13px] font-medium text-espresso">{spec.value}</p>
+                  <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-espresso-soft/55">{spec.label}</p>
                 </div>
-                <div>
-                  <span className="block text-xs font-bold text-gray-800">{property.beds} Bedrooms</span>
-                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Rooms</span>
-                </div>
-              </div>
-
-              {/* 2. Bathrooms */}
-              <div className="border border-gray-100 hover:border-rose-100 hover:bg-rose-50/20 p-3.5 rounded-2xl flex items-center gap-3 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center flex-shrink-0 text-brand">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v16M20 4v16M4 12h16M7 8a2 2 0 100-4 2 2 0 000 4zm10 0a2 2 0 100-4 2 2 0 000 4z" />
-                  </svg>
-                </div>
-                <div>
-                  <span className="block text-xs font-bold text-gray-800">{property.baths} Bathrooms</span>
-                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Bathrooms</span>
-                </div>
-              </div>
-
-              {/* 3. Area (sqft) */}
-              <div className="border border-gray-100 hover:border-rose-100 hover:bg-rose-50/20 p-3.5 rounded-2xl flex items-center gap-3 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center flex-shrink-0 text-brand">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8v8a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2zM9 6v4M15 6v4M6 6v2M12 6v2M18 6v2" />
-                  </svg>
-                </div>
-                <div>
-                  <span className="block text-xs font-bold text-gray-800">{property.sqft} sqft</span>
-                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Total Area</span>
-                </div>
-              </div>
-
-              {/* 4. Units */}
-              <div className="border border-gray-100 hover:border-rose-100 hover:bg-rose-50/20 p-3.5 rounded-2xl flex items-center gap-3 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center flex-shrink-0 text-brand">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                </div>
-                <div>
-                  <span className="block text-xs font-bold text-gray-800">{property.units} Units</span>
-                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Units</span>
-                </div>
-              </div>
-
-              {/* 5. Balcony */}
-              <div className="border border-gray-100 hover:border-rose-100 hover:bg-rose-50/20 p-3.5 rounded-2xl flex items-center gap-3 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center flex-shrink-0 text-brand">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16M4 6v12M20 6v12" />
-                  </svg>
-                </div>
-                <div>
-                  <span className="block text-xs font-bold text-gray-800">{property.balcony} Balcony</span>
-                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Balcony</span>
-                </div>
-              </div>
-
-              {/* 6. Facing Direction */}
-              <div className="border border-gray-100 hover:border-rose-100 hover:bg-rose-50/20 p-3.5 rounded-2xl flex items-center gap-3 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center flex-shrink-0 text-brand">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <circle cx={12} cy={12} r={9} />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 7l1.5 3.5L17 12l-3.5 1.5L12 17l-1.5-3.5L7 12l3.5-1.5L12 7z" />
-                  </svg>
-                </div>
-                <div>
-                  <span className="block text-xs font-bold text-gray-800 truncate" title={property.facing}>{property.facing}</span>
-                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Facing</span>
-                </div>
-              </div>
-
-              {/* 7. Parking */}
-              <div className="border border-gray-100 hover:border-rose-100 hover:bg-rose-50/20 p-3.5 rounded-2xl flex items-center gap-3 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center flex-shrink-0 text-brand">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 10V7a3 3 0 013-3h8a3 3 0 013 3v3M4 19v-4a2 2 0 012-2h12a2 2 0 012 2v4m-12 0H5m14 0h-1M9 17h.01M15 17h.01" />
-                  </svg>
-                </div>
-                <div>
-                  <span className="block text-xs font-bold text-gray-800 truncate" title={property.parking}>{property.parking}</span>
-                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Parking</span>
-                </div>
-              </div>
-
-              {/* 8. Elevator */}
-              <div className="border border-gray-100 hover:border-rose-100 hover:bg-rose-50/20 p-3.5 rounded-2xl flex items-center gap-3 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center flex-shrink-0 text-brand">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <rect x={4} y={4} width={16} height={16} rx={2} />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 9l3-3 3 3M9 15l3 3 3-3" />
-                  </svg>
-                </div>
-                <div>
-                  <span className="block text-xs font-bold text-gray-800 truncate" title={property.elevator}>{property.elevator}</span>
-                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Elevator</span>
-                </div>
-              </div>
-
-              {/* 9. Floor */}
-              <div className="border border-gray-100 hover:border-rose-100 hover:bg-rose-50/20 p-3.5 rounded-2xl flex items-center gap-3 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center flex-shrink-0 text-brand">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 20h18M3 20v-4h4v4M7 16v-4h4v4M11 12v-4h4v4M15 8V4h6v4" />
-                  </svg>
-                </div>
-                <div>
-                  <span className="block text-xs font-bold text-gray-800 truncate" title={property.floor}>{property.floor}</span>
-                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Floor</span>
-                </div>
-              </div>
-
-              {/* 10. Est Year */}
-              <div className="border border-gray-100 hover:border-rose-100 hover:bg-rose-50/20 p-3.5 rounded-2xl flex items-center gap-3 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center flex-shrink-0 text-brand">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <span className="block text-xs font-bold text-gray-800">Est. {property.estYear}</span>
-                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Built Year</span>
-                </div>
-              </div>
-
-              {/* 11. Furnished State */}
-              <div className="border border-gray-100 hover:border-rose-100 hover:bg-rose-50/20 p-3.5 rounded-2xl flex items-center gap-3 transition-all col-span-2 sm:col-span-1">
-                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center flex-shrink-0 text-brand">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 10V7a1 1 0 011-1h14a1 1 0 011 1v3M3 18v-5a2 2 0 012-2h14a2 2 0 012 2v5M3 18h18M6 18v1M18 18v1" />
-                  </svg>
-                </div>
-                <div>
-                  <span className="block text-xs font-bold text-gray-800">{property.furnished}</span>
-                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Furnishing</span>
-                </div>
-              </div>
-
+              ))}
             </div>
 
             {/* Description Text */}
-            <div className="pt-4 border-t border-gray-100">
-              <h3 className="font-bold text-gray-900 text-sm mb-3">Property Description</h3>
-              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-light whitespace-pre-line">
+            <div className="pt-4 border-t border-espresso-line/70">
+              <h3 className="font-bold text-espresso text-sm mb-3">Property Description</h3>
+              <p className="text-xs sm:text-sm text-espresso-soft leading-relaxed font-light whitespace-pre-line">
                 {property.description}
               </p>
             </div>
 
             {/* Hosting Details */}
-            <div className="flex items-center gap-4 py-4 border-t border-gray-100">
-              <div className="w-12 h-12 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center font-bold text-sm text-brand shadow-xs">
+            <div className="flex items-center gap-4 py-4 border-t border-espresso-line/70">
+              <div className="w-12 h-12 rounded-full bg-cream border border-espresso-line flex items-center justify-center font-bold text-sm text-espresso shadow-xs">
                 {property.ownerAvatar}
               </div>
               <div>
-                <h4 className="text-xs sm:text-sm font-bold text-gray-800">Hosted by {property.ownerName}</h4>
-                <p className="text-[10px] sm:text-xs text-gray-500 font-medium">Professional Host &bull; 24/7 Priority Support Enabled</p>
+                <h4 className="text-xs sm:text-sm font-bold text-espresso">Hosted by {property.ownerName}</h4>
+                <p className="text-[10px] sm:text-xs text-espresso-soft/75 font-medium">Professional Host &bull; 24/7 Priority Support Enabled</p>
               </div>
             </div>
 
           </div>
 
           {/* Location / Map Section Box */}
-          <div className="bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+          <div className="bg-white border border-espresso-line/70 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl sm:text-2xl font-display font-extrabold text-gray-900">Location</h2>
-              <span className="text-xs text-gray-500 font-semibold">{property.location}</span>
+              <h2 className="text-xl sm:text-2xl font-display font-extrabold text-espresso">Location</h2>
+              <span className="text-xs text-espresso-soft/75 font-semibold">{property.location}</span>
             </div>
             
             {/* Map Component */}
-            <MockMap location={property.location} />
+            <PropertyLocationMap
+              latitude={property.coordinates?.latitude}
+              longitude={property.coordinates?.longitude}
+              label={property.title}
+            />
           </div>
 
           {/* Additional Features Section Box */}
           <div
             id="additional-features-section"
-            className="bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6 scroll-mt-24"
+            className="bg-white border border-espresso-line/70 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6 scroll-mt-24"
           >
-            <h2 className="text-xl sm:text-2xl font-display font-extrabold text-gray-900">Additional Features</h2>
-            
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {property.additionalFeatures ? (
-                property.additionalFeatures.map((feature, idx) => (
-                  <li key={idx} className="flex items-center gap-2.5 text-xs sm:text-sm text-gray-700">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0 animate-pulse"></span>
-                    {feature}
+            <h2 className="text-xl font-display font-extrabold text-espresso sm:text-2xl">What this place offers</h2>
+
+            {/* The amenities and rules the host set. This section used to list
+                "24/7 Security Guard, CCTV Surveillance, Govt Gas Supply,
+                Community Hall, House-help Room" - written into the markup and
+                shown identically on every listing on the platform. */}
+            {(property.amenities || []).length > 0 ? (
+              <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {property.amenities.map((amenity) => (
+                  <li
+                    key={amenity._id || amenity.name || amenity}
+                    className="flex items-center gap-2.5 text-xs capitalize text-espresso-soft sm:text-sm"
+                  >
+                    <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-bronze"></span>
+                    {amenity.name || amenity}
                   </li>
-                ))
-              ) : (
-                <>
-                  <li className="flex items-center gap-2.5 text-xs sm:text-sm text-gray-700">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0"></span>
-                    24/7 Security Guard
-                  </li>
-                  <li className="flex items-center gap-2.5 text-xs sm:text-sm text-gray-700">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0"></span>
-                    CCTV Surveillance
-                  </li>
-                  <li className="flex items-center gap-2.5 text-xs sm:text-sm text-gray-700">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0"></span>
-                    Govt Gas Supply
-                  </li>
-                  <li className="flex items-center gap-2.5 text-xs sm:text-sm text-gray-700">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0"></span>
-                    Community Hall
-                  </li>
-                  <li className="flex items-center gap-2.5 text-xs sm:text-sm text-gray-700">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0"></span>
-                    House-help Room
-                  </li>
-                </>
-              )}
-            </ul>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[13px] text-espresso-soft/60">
+                This host has not listed any amenities yet.
+              </p>
+            )}
+
+            {(property.houseRules || []).length > 0 && (
+              <div className="border-t border-espresso-line/70 pt-5">
+                <h3 className="mb-3 text-sm font-bold text-espresso">House rules</h3>
+                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {property.houseRules.map((rule, index) => (
+                    <li key={index} className="flex items-center gap-2.5 text-xs text-espresso-soft sm:text-sm">
+                      <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-espresso-line"></span>
+                      {rule}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* Booking / Booking Calendar Container (Preserving original double booking functional flow) */}
-          <div className="bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
-            <div className="flex justify-between items-center border-b border-gray-100 pb-4">
+          <div className="bg-white border border-espresso-line/70 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+            <div className="flex justify-between items-center border-b border-espresso-line/70 pb-4">
               <div>
-                <h2 className="text-xl sm:text-2xl font-display font-extrabold text-gray-900">Select Booking Dates</h2>
-                <p className="text-[10px] text-gray-400 mt-1">Red-bordered dates are unavailable.</p>
+                <h2 className="text-xl sm:text-2xl font-display font-extrabold text-espresso">Select Booking Dates</h2>
+                <p className="text-[10px] text-espresso-soft/55 mt-1">Red-bordered dates are unavailable.</p>
 
                 {/* A long lease is applied for, not booked */}
                 {(property?.rentalTypes || []).includes('long') && (
@@ -932,8 +789,8 @@ const PropertyDetails = () => {
                         onClick={() => setRentalType(item.id)}
                         className={`px-3.5 py-2 rounded-xl border text-left transition-all cursor-pointer ${
                           rentalType === item.id
-                            ? 'border-rose-500 bg-rose-50 text-rose-600'
-                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                            ? 'border-espresso bg-cream text-bronze'
+                            : 'border-espresso-line bg-white text-espresso-soft hover:border-gray-300'
                         }`}
                       >
                         <span className="block text-[11px] font-bold">{item.label}</span>
@@ -958,7 +815,7 @@ const PropertyDetails = () => {
                   <button
                     onClick={handlePrevMonth}
                     disabled={isPastMonth}
-                    className="w-8 h-8 rounded-lg border border-gray-200 text-gray-600 flex items-center justify-center transition-all hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                    className="w-8 h-8 rounded-lg border border-espresso-line text-espresso-soft flex items-center justify-center transition-all hover:bg-cream disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                     title="Previous month"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -966,11 +823,11 @@ const PropertyDetails = () => {
                     </svg>
                   </button>
 
-                  <span className="text-xs font-bold text-gray-800 tracking-wide">{monthLabel}</span>
+                  <span className="text-xs font-bold text-espresso tracking-wide">{monthLabel}</span>
 
                   <button
                     onClick={handleNextMonth}
-                    className="w-8 h-8 rounded-lg border border-gray-200 text-gray-600 flex items-center justify-center transition-all hover:bg-gray-50 cursor-pointer"
+                    className="w-8 h-8 rounded-lg border border-espresso-line text-espresso-soft flex items-center justify-center transition-all hover:bg-cream cursor-pointer"
                     title="Next month"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -979,7 +836,7 @@ const PropertyDetails = () => {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-gray-500 mb-3 uppercase tracking-wider">
+                <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-espresso-soft/75 mb-3 uppercase tracking-wider">
                   <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
                 </div>
 
@@ -997,10 +854,10 @@ const PropertyDetails = () => {
                           !day
                             ? 'opacity-0 cursor-default pointer-events-none'
                             : isBooked
-                            ? 'bg-rose-50 text-rose-500 border border-rose-100 line-through opacity-70 cursor-not-allowed'
+                            ? 'bg-cream text-bronze border border-espresso-line line-through opacity-70 cursor-not-allowed'
                             : selectedClass
                             ? selectedClass
-                            : 'bg-gray-50 hover:bg-gray-100 text-gray-700 hover:scale-105 active:scale-95'
+                            : 'bg-cream hover:bg-gray-100 text-gray-700 hover:scale-105 active:scale-95'
                         }`}
                       >
                         {day}
@@ -1013,36 +870,36 @@ const PropertyDetails = () => {
               {/* Form Input Display & Status Messages */}
               <div className="flex flex-col justify-between space-y-6">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 border border-gray-150 p-3.5 rounded-2xl">
-                    <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Check-In</label>
+                  <div className="bg-cream border border-espresso-line p-3.5 rounded-2xl">
+                    <label className="block text-[9px] font-bold text-espresso-soft/55 uppercase tracking-wider mb-1">Check-In</label>
                     <input
                       type="date"
                       value={checkInDate}
                       min={todayStr}
                       onChange={(e) => handleTypedDate('checkIn', e.target.value)}
-                      className="w-full bg-transparent text-xs sm:text-sm font-bold text-gray-800 focus:outline-none cursor-pointer"
+                      className="w-full bg-transparent text-xs sm:text-sm font-bold text-espresso focus:outline-none cursor-pointer"
                     />
                   </div>
-                  <div className="bg-gray-50 border border-gray-150 p-3.5 rounded-2xl">
-                    <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Check-Out</label>
+                  <div className="bg-cream border border-espresso-line p-3.5 rounded-2xl">
+                    <label className="block text-[9px] font-bold text-espresso-soft/55 uppercase tracking-wider mb-1">Check-Out</label>
                     <input
                       type="date"
                       value={checkOutDate}
                       min={checkInDate || todayStr}
                       onChange={(e) => handleTypedDate('checkOut', e.target.value)}
-                      className="w-full bg-transparent text-xs sm:text-sm font-bold text-gray-800 focus:outline-none cursor-pointer"
+                      className="w-full bg-transparent text-xs sm:text-sm font-bold text-espresso focus:outline-none cursor-pointer"
                     />
                   </div>
                 </div>
 
-                <div className="bg-gray-50 border border-gray-150 p-3.5 rounded-2xl">
-                  <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                <div className="bg-cream border border-espresso-line p-3.5 rounded-2xl">
+                  <label className="block text-[9px] font-bold text-espresso-soft/55 uppercase tracking-wider mb-1">
                     Guests {property.maxGuests ? `(max ${property.maxGuests})` : ''}
                   </label>
                   <select
                     value={guestsCount}
                     onChange={(e) => setGuestsCount(Number(e.target.value))}
-                    className="w-full bg-transparent text-xs sm:text-sm font-bold text-gray-800 focus:outline-none cursor-pointer"
+                    className="w-full bg-transparent text-xs sm:text-sm font-bold text-espresso focus:outline-none cursor-pointer"
                   >
                     {Array.from({ length: property.maxGuests || 8 }, (_, index) => index + 1).map((count) => (
                       <option key={count} value={count}>
@@ -1070,7 +927,7 @@ const PropertyDetails = () => {
                 {/* ====== Coupon ====== */}
                 {checkInDate && checkOutDate && (
                   <div className="space-y-2">
-                    <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider">
+                    <label className="block text-[9px] font-bold text-espresso-soft/55 uppercase tracking-wider">
                       Coupon code
                     </label>
                     <div className="flex gap-2">
@@ -1079,12 +936,12 @@ const PropertyDetails = () => {
                         value={couponInput}
                         onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                         placeholder="e.g. WELCOME20"
-                        className="flex-1 bg-gray-50 border border-gray-150 rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-gray-800 placeholder-gray-400 focus:outline-none focus:border-rose-400 focus:bg-white transition-colors uppercase"
+                        className="flex-1 bg-cream border border-espresso-line rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-espresso placeholder-espresso-soft/45 focus:outline-none focus:border-espresso focus:bg-white transition-colors uppercase"
                       />
                       {appliedCoupon ? (
                         <button
                           onClick={() => { setAppliedCoupon(''); setCouponInput('') }}
-                          className="px-4 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer bg-transparent"
+                          className="px-4 rounded-2xl border border-espresso-line text-espresso-soft hover:bg-cream text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer bg-transparent"
                         >
                           Remove
                         </button>
@@ -1099,7 +956,7 @@ const PropertyDetails = () => {
                       )}
                     </div>
                     {couponError && (
-                      <p className="text-[11px] text-rose-600 font-semibold">{couponError}</p>
+                      <p className="text-[11px] text-bronze font-semibold">{couponError}</p>
                     )}
                     {quote?.couponCode && (
                       <p className="text-[11px] text-green-600 font-semibold">
@@ -1111,14 +968,14 @@ const PropertyDetails = () => {
 
                 {/* ====== Live quote from the server ====== */}
                 {checkInDate && checkOutDate && (
-                  <div className="bg-white border border-gray-150 rounded-2xl p-4 space-y-2.5">
+                  <div className="bg-white border border-espresso-line rounded-2xl p-4 space-y-2.5">
                     {quoteLoading ? (
-                      <div className="text-[11px] text-gray-400 font-semibold py-3 text-center">Pricing your stay...</div>
+                      <div className="text-[11px] text-espresso-soft/55 font-semibold py-3 text-center">Pricing your stay...</div>
                     ) : quoteMessage ? (
-                      <div className="text-[11px] text-rose-600 font-semibold py-2">{quoteMessage}</div>
+                      <div className="text-[11px] text-bronze font-semibold py-2">{quoteMessage}</div>
                     ) : quote ? (
                       <>
-                        <div className="flex justify-between text-[11px] text-gray-500">
+                        <div className="flex justify-between text-[11px] text-espresso-soft/75">
                           <span>
                             {quote.rentalType === 'mid'
                               ? quote.months === 0
@@ -1126,7 +983,7 @@ const PropertyDetails = () => {
                                 : `${quote.months} month${quote.months > 1 ? 's' : ''}${quote.extraDays ? ` + ${quote.extraDays} days` : ''} x $${quote.monthlyRate}`
                               : `${quote.nights} night${quote.nights > 1 ? 's' : ''} x $${quote.averageNightlyRate} avg`}
                           </span>
-                          <span className="font-semibold text-gray-800">
+                          <span className="font-semibold text-espresso">
                             ${quote.rentalType === 'mid'
                               ? (quote.months * quote.monthlyRate + (quote.proratedAmount || 0)).toLocaleString()
                               : (quote.averageNightlyRate * quote.nights).toLocaleString()}
@@ -1148,41 +1005,41 @@ const PropertyDetails = () => {
                         )}
 
                         {quote.cleaningFee > 0 && (
-                          <div className="flex justify-between text-[11px] text-gray-500">
-                            <span>Cleaning fee</span><span className="font-semibold text-gray-800">${quote.cleaningFee}</span>
+                          <div className="flex justify-between text-[11px] text-espresso-soft/75">
+                            <span>Cleaning fee</span><span className="font-semibold text-espresso">${quote.cleaningFee}</span>
                           </div>
                         )}
 
                         {quote.serviceFee > 0 && (
-                          <div className="flex justify-between text-[11px] text-gray-500">
-                            <span>Service fee</span><span className="font-semibold text-gray-800">${quote.serviceFee}</span>
+                          <div className="flex justify-between text-[11px] text-espresso-soft/75">
+                            <span>Service fee</span><span className="font-semibold text-espresso">${quote.serviceFee}</span>
                           </div>
                         )}
 
                         {quote.taxAmount > 0 && (
-                          <div className="flex justify-between text-[11px] text-gray-500">
-                            <span>Taxes ({quote.taxRatePercent}%)</span><span className="font-semibold text-gray-800">${quote.taxAmount}</span>
+                          <div className="flex justify-between text-[11px] text-espresso-soft/75">
+                            <span>Taxes ({quote.taxRatePercent}%)</span><span className="font-semibold text-espresso">${quote.taxAmount}</span>
                           </div>
                         )}
 
                         {quote.securityDeposit > 0 && (
-                          <div className="flex justify-between text-[11px] text-gray-500">
-                            <span>Refundable deposit</span><span className="font-semibold text-gray-800">${quote.securityDeposit.toLocaleString()}</span>
+                          <div className="flex justify-between text-[11px] text-espresso-soft/75">
+                            <span>Refundable deposit</span><span className="font-semibold text-espresso">${quote.securityDeposit.toLocaleString()}</span>
                           </div>
                         )}
 
-                        <div className="flex justify-between pt-2.5 border-t border-gray-100 text-sm font-extrabold text-gray-900">
+                        <div className="flex justify-between pt-2.5 border-t border-espresso-line/70 text-sm font-extrabold text-espresso">
                           <span>{quote.billingCycle === 'monthly' ? 'Due today' : 'Total'}</span>
                           <span>${quote.dueNow.toLocaleString()}</span>
                         </div>
 
                         {quote.billingCycle === 'monthly' && quote.schedule.length > 0 && (
                           <div className="pt-1 space-y-1">
-                            <p className="text-[10px] text-gray-400 font-semibold">
+                            <p className="text-[10px] text-espresso-soft/55 font-semibold">
                               Then {quote.schedule.length} monthly charge{quote.schedule.length > 1 ? 's' : ''} — ${quote.totalAmount.toLocaleString()} in total
                             </p>
                             {quote.schedule.slice(0, 3).map((charge, index) => (
-                              <div key={index} className="flex justify-between text-[10px] text-gray-400">
+                              <div key={index} className="flex justify-between text-[10px] text-espresso-soft/55">
                                 <span>{new Date(charge.dueDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                                 <span>${charge.amount.toLocaleString()}{charge.prorated ? ' (prorated)' : ''}</span>
                               </div>
@@ -1191,7 +1048,7 @@ const PropertyDetails = () => {
                         )}
 
                         {quote.billingCycle === 'monthly' && quote.schedule.length === 0 && (
-                          <p className="text-[10px] text-gray-400 font-semibold pt-1">
+                          <p className="text-[10px] text-espresso-soft/55 font-semibold pt-1">
                             Nothing further to pay — the whole stay is settled today.
                           </p>
                         )}
@@ -1200,7 +1057,7 @@ const PropertyDetails = () => {
                           <p className="text-[10px] text-green-600 font-semibold pt-1">Utilities included{quote.utilityCap ? ` up to $${quote.utilityCap}/month` : ''}</p>
                         )}
 
-                        <p className="text-[10px] text-gray-400 font-semibold capitalize pt-1">
+                        <p className="text-[10px] text-espresso-soft/55 font-semibold capitalize pt-1">
                           {quote.cancellationPolicy.replace('_', ' ')} cancellation policy
                         </p>
                       </>
@@ -1212,7 +1069,7 @@ const PropertyDetails = () => {
                   <div
                     className={`p-4 rounded-2xl border text-xs leading-relaxed ${
                       isError
-                        ? 'bg-rose-50 border-rose-100 text-rose-600 animate-pulse'
+                        ? 'bg-cream border-espresso-line text-bronze animate-pulse'
                         : 'bg-green-50 border-green-200 text-green-700'
                     }`}
                   >
@@ -1241,7 +1098,7 @@ const PropertyDetails = () => {
                   <button
                     onClick={handleBook}
                     disabled={isBooking}
-                    className="w-full bg-rose-500 hover:bg-rose-600 active:scale-[0.99] text-white rounded-2xl py-3.5 text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-rose-500/10 cursor-pointer disabled:opacity-60"
+                    className="w-full bg-espresso hover:bg-espresso-soft active:scale-[0.99] text-white rounded-2xl py-3.5 text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-espresso/10 cursor-pointer disabled:opacity-60"
                   >
                     {isBooking ? 'Booking...' : 'Book Now'}
                   </button>
@@ -1255,23 +1112,27 @@ const PropertyDetails = () => {
 
         {/* Right Column: Pricing & Quick Metadata Sidebar Box */}
         <div className="lg:col-span-1">
-          <div className="bg-white p-6 sm:p-7 rounded-3xl border border-gray-100 sticky top-24 shadow-xl space-y-6 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+          <div className="bg-white p-6 sm:p-7 rounded-3xl border border-espresso-line/70 sticky top-24 shadow-xl space-y-6 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
             
             {/* Tags Row with Share button */}
             <div className="flex justify-between items-center gap-3">
               <div className="flex flex-wrap gap-1.5">
-                {property.tags ? (
-                  property.tags.map((tag, idx) => (
-                    <span key={idx} className="bg-gray-50 border border-gray-200 text-gray-500 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">
-                      {tag}
-                    </span>
-                  ))
-                ) : (
-                  <>
-                    <span className="bg-gray-50 border border-gray-200 text-gray-500 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">Residential</span>
-                    <span className="bg-gray-50 border border-gray-200 text-gray-500 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">Apartment</span>
-                    <span className="bg-gray-50 border border-gray-200 text-gray-500 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">Used</span>
-                  </>
+                {/* The horizons this home can be taken on - the one thing a
+                    visitor cannot work out from the photographs. The fallback
+                    used to read "Residential / Apartment / Used", which says
+                    nothing about a place you are renting. */}
+                {(property.rentalTypes || []).map((type) => (
+                  <span
+                    key={type}
+                    className="rounded-md border border-espresso-line bg-cream px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-espresso-soft/75"
+                  >
+                    {HORIZON_TAGS[type] || type}
+                  </span>
+                ))}
+                {property.propertyType && (
+                  <span className="rounded-md border border-espresso-line bg-cream px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-espresso-soft/75">
+                    {property.propertyType}
+                  </span>
                 )}
               </div>
 
@@ -1279,7 +1140,7 @@ const PropertyDetails = () => {
               <div className="relative">
                 <button
                   onClick={copyShareLink}
-                  className="w-8 h-8 rounded-full bg-gray-50 border border-gray-150 hover:bg-gray-100 text-gray-600 hover:text-gray-900 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-cream border border-espresso-line hover:bg-gray-100 text-espresso-soft hover:text-espresso flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer"
                   title="Share property link"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1295,16 +1156,16 @@ const PropertyDetails = () => {
             </div>
 
             {/* Price Detail Frame (smartLET structure) */}
-            <div className="space-y-1.5 pb-5 border-b border-gray-100">
+            <div className="space-y-1.5 pb-5 border-b border-espresso-line/70">
               <div className="flex items-baseline">
-                <span className="text-2xl sm:text-3xl font-display font-extrabold text-gray-900">
+                <span className="text-2xl sm:text-3xl font-display font-extrabold text-espresso">
                   ${(property.pricePerNight || property.price || 0).toLocaleString()}
                 </span>
-                <span className="text-xs text-gray-400 font-bold ml-1">/ night</span>
+                <span className="text-xs text-espresso-soft/55 font-bold ml-1">/ night</span>
               </div>
               
-              <div className="flex items-center gap-1.5 text-xs text-gray-500 font-semibold bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-150 w-fit">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className="flex items-center gap-1.5 text-xs text-espresso-soft/75 font-semibold bg-cream px-3 py-1.5 rounded-lg border border-espresso-line w-fit">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-espresso" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Service Charge ${(property.serviceFee || property.serviceCharge || 0).toLocaleString()}
@@ -1316,74 +1177,47 @@ const PropertyDetails = () => {
               
               {/* Location */}
               <div className="flex items-start gap-3">
-                <div className="w-5 h-5 flex items-center justify-center flex-shrink-0 text-rose-500 mt-0.5">
+                <div className="w-5 h-5 flex items-center justify-center flex-shrink-0 text-bronze mt-0.5">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   </svg>
                 </div>
                 <div>
-                  <span className="block text-[10px] text-gray-400 font-bold uppercase tracking-wider">Location</span>
-                  <span className="text-xs sm:text-sm font-semibold text-gray-800">{property.location}</span>
+                  <span className="block text-[10px] text-espresso-soft/55 font-bold uppercase tracking-wider">Location</span>
+                  <span className="text-xs sm:text-sm font-semibold text-espresso">{property.location}</span>
                 </div>
               </div>
 
-              {/* Available From */}
+              {/* Cancellation, which is what a guest wants to know before
+                  booking. This row used to promise "Available from 1st June
+                  2026" - a date written into the markup, shown on every
+                  listing, true of none of them. */}
               <div className="flex items-start gap-3">
-                <div className="w-5 h-5 flex items-center justify-center flex-shrink-0 text-rose-500 mt-0.5">
+                <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center text-bronze">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <div>
-                  <span className="block text-[10px] text-gray-400 font-bold uppercase tracking-wider">Availability</span>
-                  <span className="text-xs sm:text-sm font-semibold text-gray-800">Available from {property.availableFrom || '1st June 2026'}</span>
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-espresso-soft/55">Cancellation</span>
+                  <span className="text-xs font-semibold capitalize text-espresso sm:text-sm">
+                    {(property.cancellationPolicy || 'moderate').replace('_', ' ')}
+                  </span>
                 </div>
               </div>
 
-              {/* Property ID */}
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 flex items-center justify-center flex-shrink-0 text-rose-500 mt-0.5">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                  </svg>
-                </div>
-                <div className="flex-grow flex items-center justify-between gap-2">
-                  <div>
-                    <span className="block text-[10px] text-gray-400 font-bold uppercase tracking-wider">Property ID</span>
-                    <span className="text-xs sm:text-sm font-mono font-bold text-gray-800">{property.propertyId}</span>
-                  </div>
-                  
-                  {/* Copy Button */}
-                  <div className="relative">
-                    <button
-                      onClick={copyPropertyId}
-                      className="w-7 h-7 rounded-lg hover:bg-gray-50 border border-gray-150 flex items-center justify-center hover:scale-105 active:scale-95 transition-all text-gray-500 hover:text-gray-900 cursor-pointer"
-                      title="Copy property ID"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                      </svg>
-                    </button>
-                    {copiedId && (
-                      <span className="absolute right-0 bottom-full mb-1 bg-gray-900 text-white text-[9px] px-1.5 py-0.5 rounded shadow-md whitespace-nowrap z-30">
-                        Copied!
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
 
             </div>
 
             {/* Quick Contact & Scheduling CTA Buttons */}
-            <div className="space-y-3 pt-4 border-t border-gray-100">
+            <div className="space-y-3 pt-4 border-t border-espresso-line/70">
               
               <div className="grid grid-cols-2 gap-3">
                 
                 {/* Secondary Button: Request Viewing */}
                 <button
                   onClick={() => handleScrollToSection('additional-features-section')}
-                  className="bg-white border border-rose-500 hover:bg-rose-50 text-rose-500 rounded-xl py-3 text-xs font-bold uppercase tracking-wider hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer text-center"
+                  className="bg-white border border-espresso hover:bg-cream text-bronze rounded-xl py-3 text-xs font-bold uppercase tracking-wider hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer text-center"
                 >
                   Request Viewing
                 </button>
@@ -1391,7 +1225,7 @@ const PropertyDetails = () => {
                 {/* Secondary Button: Call Us */}
                 <a
                   href="tel:+8801700000000"
-                  className="bg-white border border-rose-500 hover:bg-rose-50 text-rose-500 rounded-xl py-3 text-xs font-bold uppercase tracking-wider hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer text-center block"
+                  className="bg-white border border-espresso hover:bg-cream text-bronze rounded-xl py-3 text-xs font-bold uppercase tracking-wider hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer text-center block"
                 >
                   Call Us
                 </a>
@@ -1401,7 +1235,7 @@ const PropertyDetails = () => {
               {/* Primary Call to Action Button: Apply for Rent */}
               <button
                 onClick={() => handleScrollToSection('additional-features-section')}
-                className="w-full bg-rose-500 hover:bg-rose-600 active:scale-[0.99] text-white rounded-xl py-3.5 text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-rose-500/10 cursor-pointer text-center"
+                className="w-full bg-espresso hover:bg-espresso-soft active:scale-[0.99] text-white rounded-xl py-3.5 text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-espresso/10 cursor-pointer text-center"
               >
                 Apply for Rent
               </button>
@@ -1413,18 +1247,6 @@ const PropertyDetails = () => {
 
       </div>
 
-      {/* Floating WhatsApp Action Button in Bottom-Right Corner */}
-      <a
-        href="https://wa.me/8801700000000"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-20 w-12 h-12 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-40"
-        title="Contact us on WhatsApp"
-      >
-        <svg viewBox="0 0 24 24" className="w-7 h-7 fill-current">
-          <path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.76.46 3.48 1.332 5l-1.416 5.176 5.3-.1.01.002c1.616.866 3.42 1.32 5.258 1.32 5.506 0 9.988-4.482 9.988-9.988C22 6.482 17.518 2 12.012 2zm6.273 14.1c-.244.686-1.22 1.258-1.688 1.334-.45.074-.74.134-2.584-.6-2.368-.946-3.896-3.356-4.016-3.514-.118-.158-.976-1.3-1.008-2.618-.032-1.318.664-1.968.9-2.228.24-.26.5-.326.666-.326.166 0 .332.002.476.008.15.006.352-.058.552.428.2.484.686 1.674.746 1.794.06.12.1.26.02.42-.08.16-.12.26-.24.4-.12.14-.256.314-.366.422-.12.12-.246.252-.106.494.14.242.62 1.022 1.33 1.656.914.816 1.686 1.07 1.928 1.19.24.12.38.102.52-.058.14-.16.6-.698.76-.938.16-.24.32-.2.534-.12.214.08 1.36.642 1.594.76.234.118.39.176.448.276.058.1.058.574-.186 1.26z" />
-        </svg>
-      </a>
 
     </div>
   )
