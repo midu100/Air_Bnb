@@ -4,9 +4,9 @@
   --font-sans: "Urbanist", system-ui, -apple-system, sans-serif;
   --font-display: "Urbanist", system-ui, -apple-system, sans-serif;
   
-  --color-brand: #f0506e;
-  --color-brand-dark: #e03858;
-  --color-brand-light: #fce4ec;
+  --color-brand: #a0682c;
+  --color-brand-dark: #7d5122;
+  --color-brand-light: #f5f1e8;
 
   /* ===== Premium palette =====
      A cream ground with espresso type and one bronze accent. The dark tones
@@ -120,16 +120,16 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #f0506e;
+  background: #a0682c;
 }
 
 /* Utility: text accent gradient */
 .text-accent {
-  color: #f0506e;
+  color: #a0682c;
 }
 
 .text-gradient-brand {
-  background: linear-gradient(135deg, #f0506e 0%, #e03858 100%);
+  background: linear-gradient(135deg, #a0682c 0%, #7d5122 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -169,8 +169,8 @@ body {
 }
 
 .input-clean:focus {
-  border-color: #f0506e;
-  box-shadow: 0 0 0 3px rgba(240, 80, 110, 0.1);
+  border-color: #a0682c;
+  box-shadow: 0 0 0 3px rgba(28, 24, 20, 0.08);
   outline: none;
 }
 
@@ -180,7 +180,7 @@ body {
 
 /* Brand button */
 .btn-brand {
-  background: linear-gradient(135deg, #f0506e, #e03858);
+  background: linear-gradient(135deg, #a0682c, #7d5122);
   color: white;
   border: none;
   border-radius: 8px;
@@ -189,12 +189,12 @@ body {
   padding: 10px 24px;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(240, 80, 110, 0.25);
+  box-shadow: 0 2px 8px rgba(160, 104, 44, 0.22);
 }
 
 .btn-brand:hover {
-  background: linear-gradient(135deg, #e03858, #c52d4a);
-  box-shadow: 0 4px 16px rgba(240, 80, 110, 0.35);
+  background: linear-gradient(135deg, #7d5122, #5d3c19);
+  box-shadow: 0 4px 16px rgba(160, 104, 44, 0.32);
   transform: translateY(-1px);
 }
 
@@ -205,8 +205,8 @@ body {
 /* Outline brand button */
 .btn-outline-brand {
   background: transparent;
-  color: #f0506e;
-  border: 1.5px solid #f0506e;
+  color: #a0682c;
+  border: 1.5px solid #a0682c;
   border-radius: 8px;
   font-weight: 600;
   font-size: 13px;

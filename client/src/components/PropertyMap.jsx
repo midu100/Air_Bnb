@@ -173,7 +173,7 @@ const PropertyMap = ({ properties = [], rentalType = 'short', loading = false })
 
             <button
               onClick={handleOpen}
-              className="w-full mt-2.5 bg-[#f0506e] hover:bg-[#d94560] text-white rounded-xl py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer border-none active:scale-[0.98]"
+              className="w-full mt-2.5 bg-espresso hover:bg-espresso-soft text-linen rounded-xl py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer border-none active:scale-[0.98]"
             >
               View this stay
             </button>

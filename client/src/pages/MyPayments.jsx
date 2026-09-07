@@ -39,7 +39,7 @@ const MyPayments = () => {
     <div className="pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 font-sans min-h-[70vh]">
       <div className="mb-10 text-left">
         <h1 className="text-3xl font-display font-extrabold text-gray-900">
-          Payment <span className="text-[#f0506e]">History</span>
+          Payment <span className="text-bronze">History</span>
         </h1>
         <p className="text-xs text-gray-500 mt-1">
           Review all payments made for your stay reservations
@@ -56,7 +56,7 @@ const MyPayments = () => {
         </div>
       ) : !data?.payments || data.payments.length === 0 ? (
         <div className="bg-white border border-gray-100 shadow-sm p-16 rounded-3xl text-center flex flex-col items-center justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center text-[#f0506e] mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center text-bronze mb-4">
             <HiOutlineCreditCard className="h-8 w-8" />
           </div>
           <h3 className="font-bold text-gray-800 text-lg mb-2">No Transactions</h3>

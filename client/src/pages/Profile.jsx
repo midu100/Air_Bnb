@@ -25,7 +25,7 @@ const Profile = () => {
     <div className="pt-24 pb-16 max-w-4xl mx-auto px-4 sm:px-6 font-sans min-h-[70vh]">
       <div className="mb-10 text-left">
         <h1 className="text-3xl font-display font-extrabold text-gray-900">
-          User <span className="text-[#f0506e]">Account</span>
+          User <span className="text-bronze">Account</span>
         </h1>
         <p className="text-xs text-gray-500 mt-1">
           Manage your account profile and view activity overview
@@ -45,7 +45,7 @@ const Profile = () => {
           {/* Card Left: Profile Image & Actions */}
           <div className="md:col-span-1 bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex flex-col items-center justify-between">
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-[#f0506e] shadow-sm bg-gray-50">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-espresso shadow-sm bg-gray-50">
                 <img 
                   src={user.profileImg || "https://picsum.photos/200"} 
                   alt={user.fullName} 
@@ -125,7 +125,7 @@ const Profile = () => {
                 onClick={() => navigate("/my-bookings")}
                 className="bg-white border border-gray-100 hover:border-gray-300 rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center text-center space-y-1.5 transition-all active:scale-95 cursor-pointer"
               >
-                <HiOutlineCalendar className="w-5 h-5 text-[#f0506e]" />
+                <HiOutlineCalendar className="w-5 h-5 text-bronze" />
                 <span className="text-[10px] font-bold text-gray-700">My Stays</span>
               </button>
               

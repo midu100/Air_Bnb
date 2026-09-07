@@ -38,7 +38,7 @@ const Wishlist = () => {
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-10">
         <div className="text-left">
           <h1 className="text-3xl font-display font-extrabold text-gray-900">
-            My <span className="text-[#f0506e]">Wishlist</span>
+            My <span className="text-bronze">Wishlist</span>
           </h1>
           <p className="text-xs text-gray-500 mt-1">
             Browse stays you have saved for later
@@ -67,7 +67,7 @@ const Wishlist = () => {
         </div>
       ) : !data?.properties || data.properties.length === 0 ? (
         <div className="bg-white border border-gray-100 shadow-sm p-16 rounded-3xl text-center flex flex-col items-center justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center text-[#f0506e] mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center text-bronze mb-4">
             <HiOutlineHeart className="h-8 w-8" />
           </div>
           <h3 className="font-bold text-gray-800 text-lg mb-2">No Saved Properties</h3>
@@ -83,10 +83,10 @@ const Wishlist = () => {
               <button 
                 onClick={() => handleRemove(property._id || property.id)}
                 disabled={isRemoving}
-                className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-white text-[#f0506e] flex items-center justify-center shadow-md transition-all hover:scale-105 cursor-pointer border-none"
+                className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-white text-bronze flex items-center justify-center shadow-md transition-all hover:scale-105 cursor-pointer border-none"
                 title="Remove from saved"
               >
-                <HiOutlineHeart className="w-4.5 h-4.5 fill-[#f0506e] stroke-[#f0506e]" />
+                <HiOutlineHeart className="w-4.5 h-4.5 fill-bronze stroke-bronze" />
               </button>
               
               {/* Force clean layout by not overlapping our custom heart */}

@@ -92,7 +92,7 @@ const BookingCalendar = ({
       <div className="flex items-center justify-between mb-1">
         <h3 className="font-bold text-gray-800 text-sm">{label}</h3>
         {value && (
-          <span className="text-[11px] font-bold text-[#f0506e]">
+          <span className="text-[11px] font-bold text-bronze">
             {new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
           </span>
         )}
@@ -109,7 +109,7 @@ const BookingCalendar = ({
           value={value || ''}
           min={floor}
           onChange={(e) => handleTyped(e.target.value)}
-          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#f0506e] focus:bg-white transition-colors"
+          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-gray-800 focus:outline-none focus:border-espresso focus:bg-white transition-colors"
         />
         {typedError && <p className="text-[10px] text-rose-600 font-semibold mt-1.5">{typedError}</p>}
       </div>

@@ -91,7 +91,7 @@ const MyLeases = () => {
     <div className="pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 font-sans min-h-[70vh]">
       <div className="mb-10">
         <h1 className="text-3xl font-display font-extrabold text-gray-900">
-          My <span className="text-[#f0506e]">Leases</span>
+          My <span className="text-bronze">Leases</span>
         </h1>
         <p className="text-xs text-gray-500 mt-1">Sign your tenancy, follow the rent ledger, and give notice when the time comes</p>
       </div>
@@ -102,7 +102,7 @@ const MyLeases = () => {
         <div className="py-20 text-center text-red-500 font-bold border border-dashed border-gray-200 rounded-3xl">FAILED TO LOAD. PLEASE LOGIN OR TRY AGAIN.</div>
       ) : leases.length === 0 ? (
         <div className="bg-white border border-gray-100 shadow-sm p-16 rounded-3xl text-center flex flex-col items-center justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center text-[#f0506e] mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center text-bronze mb-4">
             <HiOutlineKey className="h-8 w-8" />
           </div>
           <h3 className="font-bold text-gray-800 text-lg mb-2">No Leases Yet</h3>
@@ -159,7 +159,7 @@ const MyLeases = () => {
                   <button
                     onClick={() => handleSign(lease._id)}
                     disabled={isSigning}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-[#f0506e] hover:bg-[#d94560] text-white text-xs font-semibold rounded-xl transition-all cursor-pointer border-none active:scale-95 disabled:opacity-50"
+                    className="flex items-center gap-1 px-3 py-1.5 bg-espresso hover:bg-espresso-soft text-white text-xs font-semibold rounded-xl transition-all cursor-pointer border-none active:scale-95 disabled:opacity-50"
                   >
                     <HiOutlinePencilAlt className="w-4 h-4" /> Sign lease
                   </button>

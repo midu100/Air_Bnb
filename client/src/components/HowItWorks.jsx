@@ -1,77 +1,87 @@
 import React from 'react'
+import { motion } from 'framer-motion'
+import { FiSearch, FiCalendar, FiKey } from 'react-icons/fi'
 
-const HowItWorks = () => {
-  const steps = [
-    {
-      step: '01',
-      title: 'Find Your Stay',
-      description: 'Search from thousands of curated cabins, beachfront villas, and chic lofts worldwide.',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-bronze" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-      )
-    },
-    {
-      step: '02',
-      title: 'Book Instantly',
-      description: 'Check verified dates on the booking calendar. Zero double-booking issues with auto-blocking.',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-bronze" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      )
-    },
-    {
-      step: '03',
-      title: 'Experience Travel',
-      description: 'Arrive at your dream location, communicate with the host, and enjoy a seamless stay.',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-bronze" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      )
-    }
-  ]
+// The three steps are the same whichever horizon you are on. What changes is
+// how long you hold the keys.
+const STEPS = [
+  {
+    step: '01',
+    icon: FiSearch,
+    title: 'Pick how long',
+    description:
+      'A few nights, a furnished month, or a signed term. Choosing first is what sets the price and what is asked up front.',
+  },
+  {
+    step: '02',
+    icon: FiCalendar,
+    title: 'Book the dates',
+    description:
+      'The calendar shows what is genuinely free - confirmed stays block themselves out, so nothing can be booked twice.',
+  },
+  {
+    step: '03',
+    icon: FiKey,
+    title: 'Move in',
+    description:
+      'Message the host from the booking, get in, and stay. Deposits come back after checkout on the terms you agreed.',
+  },
+]
 
-  return (
-    <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 font-sans">
-      <div className="text-center mb-14">
-        <h2 className="text-3xl font-serif font-bold text-espresso">
-          Why Choose <span className="text-bronze">Air-Bnb</span>?
+/**
+ * HowItWorks - three steps, in the platform's own language.
+ *
+ * The section used to be headed "Why Choose Air-Bnb?" on a site called EasyLet,
+ * and described a travel site rather than one that also does month-long stays
+ * and year-long leases.
+ */
+const HowItWorks = () => (
+  <section id="how-it-works" className="bg-linen py-24 sm:py-28">
+    <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
+
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)] lg:items-end lg:gap-16">
+        <h2 className="max-w-[16ch] font-sans text-[32px] font-semibold leading-[1.02] tracking-[-0.03em] text-espresso sm:text-[46px] lg:text-[54px]">
+          Three steps, whichever way you stay
         </h2>
-        <p className="text-espresso-soft/55 text-sm mt-2 max-w-lg mx-auto">
-          We make searching and booking property stays simpler, faster, and double-booking safe.
+        <p className="max-w-[36ch] text-[13.5px] leading-relaxed text-espresso-soft/75">
+          The same platform books a weekend and signs a year. Only the paperwork behind it changes.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-        {steps.map((item, idx) => (
-          <div
-            key={idx}
-            className="card-clean p-8 rounded-2xl flex flex-col items-center text-center group"
-          >
-            {/* Step Number */}
-            <span className="absolute top-4 right-6 text-3xl font-serif font-black text-gray-100 select-none group-hover:text-[#fce4ec] transition-colors">
-              {item.step}
-            </span>
+      <div className="mt-16 grid gap-6 lg:grid-cols-3">
+        {STEPS.map((item, index) => {
+          const Icon = item.icon
 
-            {/* Icon */}
-            <div className="w-14 h-14 rounded-xl bg-[#fce4ec] flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              {item.icon}
-            </div>
+          return (
+            <motion.div
+              key={item.step}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-80px' }}
+              transition={{ duration: 0.7, delay: index * 0.12, ease: [0.22, 1, 0.36, 1] }}
+              className="group relative rounded-2xl border border-espresso-line/70 bg-white p-8 transition-all duration-500 hover:border-espresso-soft/40 hover:shadow-[0_28px_60px_-48px_rgba(28,24,20,0.5)]"
+            >
+              <span className="absolute right-7 top-7 font-sans text-[42px] font-semibold leading-none tracking-[-0.04em] text-espresso-line/70 transition-colors duration-500 group-hover:text-cream">
+                {item.step}
+              </span>
 
-            <h3 className="text-base font-bold text-espresso-soft mb-3 group-hover:text-bronze transition-colors">
-              {item.title}
-            </h3>
-            <p className="text-xs text-espresso-soft/55 leading-relaxed">
-              {item.description}
-            </p>
-          </div>
-        ))}
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-cream text-bronze">
+                <Icon size={18} />
+              </span>
+
+              <h3 className="mt-8 font-sans text-[20px] font-semibold tracking-[-0.02em] text-espresso">
+                {item.title}
+              </h3>
+
+              <p className="mt-3 max-w-[38ch] text-[13.5px] leading-relaxed text-espresso-soft/80">
+                {item.description}
+              </p>
+            </motion.div>
+          )
+        })}
       </div>
-    </section>
-  )
-}
+    </div>
+  </section>
+)
 
 export default HowItWorks

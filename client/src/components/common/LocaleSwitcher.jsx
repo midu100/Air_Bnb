@@ -47,7 +47,7 @@ const LocaleSwitcher = () => {
                   onClick={() => { setLanguage(item.code); setIsOpen(false); }}
                   className={`px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left ${
                     language === item.code
-                      ? 'bg-[#f0506e] text-white'
+                      ? 'bg-espresso text-linen'
                       : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                   }`}
                 >

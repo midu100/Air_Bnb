@@ -9,7 +9,7 @@ import FindYourHome from '../components/FindYourHome'
 import RentalHorizons from '../components/RentalHorizons'
 import HostEarnings from '../components/HostEarnings'
 import HowItWorks from '../components/HowItWorks'
-import Testimonials from '../components/Testimonials'
+import GuestAssurances from '../components/GuestAssurances'
 
 import { useGetPropertiesQuery } from '../store/api/propertyApi'
 
@@ -135,8 +135,8 @@ const Home = () => {
       {/* What the same home earns on each horizon */}
       <HostEarnings />
 
-      {/* Testimonials */}
-      <Testimonials />
+      {/* What a guest is actually covered by */}
+      <GuestAssurances />
     </div>
   )
 }

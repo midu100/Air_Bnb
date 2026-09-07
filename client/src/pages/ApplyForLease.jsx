@@ -101,7 +101,7 @@ const ApplyForLease = () => {
     }
   };
 
-  const inputClass = "w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#f0506e] transition-colors";
+  const inputClass = "w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-espresso transition-colors";
   const labelClass = "block text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1.5";
 
   if (propLoading) {
@@ -112,7 +112,7 @@ const ApplyForLease = () => {
     return (
       <div className="pt-32 pb-24 text-center font-sans">
         <h2 className="text-xl font-bold text-gray-800">Property not found</h2>
-        <Link to="/properties" className="text-[#f0506e] text-sm hover:underline mt-2 inline-block">Back to explore</Link>
+        <Link to="/properties" className="text-bronze text-sm hover:underline mt-2 inline-block">Back to explore</Link>
       </div>
     );
   }
@@ -121,7 +121,7 @@ const ApplyForLease = () => {
     <div className="pt-24 pb-16 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 font-sans">
       <div className="mb-8">
         <h1 className="text-3xl font-display font-extrabold text-gray-900">
-          Apply to <span className="text-[#f0506e]">rent</span>
+          Apply to <span className="text-bronze">rent</span>
         </h1>
         <p className="text-xs text-gray-500 mt-1">{property.title} — {property.city}, {property.country}</p>
       </div>
@@ -218,7 +218,7 @@ const ApplyForLease = () => {
                 type="checkbox"
                 checked={form.screeningConsent}
                 onChange={(e) => setForm({ ...form, screeningConsent: e.target.checked })}
-                className="w-4 h-4 mt-0.5 accent-[#f0506e] cursor-pointer shrink-0"
+                className="w-4 h-4 mt-0.5 accent-espresso cursor-pointer shrink-0"
               />
               <span className="text-xs text-gray-600 leading-relaxed">
                 I agree to a <b className="text-gray-900">credit, background and eviction check</b> being run on this
@@ -230,7 +230,7 @@ const ApplyForLease = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-[#f0506e] hover:bg-[#d94560] text-white rounded-2xl py-4 text-xs font-bold uppercase tracking-wider transition-all shadow-md cursor-pointer disabled:opacity-50"
+            className="w-full bg-espresso hover:bg-espresso-soft text-white rounded-2xl py-4 text-xs font-bold uppercase tracking-wider transition-all shadow-md cursor-pointer disabled:opacity-50"
           >
             {isLoading ? "Submitting..." : "Submit application"}
           </button>
@@ -242,7 +242,7 @@ const ApplyForLease = () => {
             <img src={property.thumbnail} alt={property.title} className="w-full h-32 object-cover rounded-2xl" />
 
             <div className="flex items-center gap-2 text-xs text-gray-500">
-              <HiOutlineHome className="w-4 h-4 text-[#f0506e]" />
+              <HiOutlineHome className="w-4 h-4 text-bronze" />
               <span className="font-semibold">{property.bedrooms} bed · {property.bathrooms} bath</span>
             </div>
 

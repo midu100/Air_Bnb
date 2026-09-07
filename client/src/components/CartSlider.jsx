@@ -116,7 +116,7 @@ const CartSlider = () => {
         <div className="cart-slider-header">
           <div className="flex flex-col text-left">
             <h2 className="text-lg font-display font-extrabold text-gray-900">
-              Your Stays <span className="text-[#f0506e]">Cart</span>
+              Your Stays <span className="text-bronze">Cart</span>
             </h2>
             <p className="text-[11px] text-gray-400 font-medium">
               Manage your draft bookings here
@@ -134,7 +134,7 @@ const CartSlider = () => {
         <div className="cart-slider-items">
           {cartItems.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center py-20 px-6">
-              <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center text-[#f0506e] mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center text-bronze mb-4">
                 <HiOutlineCalendar className="w-8 h-8" />
               </div>
               <h3 className="font-bold text-gray-800 text-sm mb-1">Your cart is empty</h3>
@@ -224,7 +224,7 @@ const CartSlider = () => {
               <button
                 onClick={handleCheckoutAll}
                 disabled={isLoading}
-                className="w-full bg-[#f0506e] text-white hover:bg-[#d63e5b] font-bold text-xs py-3 rounded-xl transition-all shadow-sm cursor-pointer"
+                className="w-full bg-espresso text-linen hover:bg-espresso-soft font-bold text-xs py-3 rounded-xl transition-all shadow-sm cursor-pointer"
               >
                 {isLoading ? "Processing..." : "Checkout All"}
               </button>

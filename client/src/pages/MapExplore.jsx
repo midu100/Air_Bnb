@@ -39,7 +39,7 @@ const MapExplore = () => {
               onClick={() => setRentalType(item.id)}
               className={`px-4 py-2.5 rounded-2xl border text-left transition-all cursor-pointer ${
                 rentalType === item.id
-                  ? 'border-[#f0506e] bg-[#f0506e]/5 text-[#f0506e]'
+                  ? 'border-bronze bg-bronze/5 text-bronze'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
               }`}
             >
