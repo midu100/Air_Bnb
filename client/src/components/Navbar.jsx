@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router'
 import { useSelector, useDispatch } from 'react-redux'
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'framer-motion'
 import { HiMenuAlt4, HiOutlineX, HiOutlineShoppingCart } from 'react-icons/hi'
@@ -26,6 +26,12 @@ const Navbar = () => {
   const { scrollY } = useScroll()
   useMotionValueEvent(scrollY, 'change', (latest) => setScrolled(latest > 80))
 
+  // Only the home page opens on a full-bleed photograph. Everywhere else the
+  // ground is cream from the first pixel, so the bar must not go pale there -
+  // that is what made every link invisible when the palette changed.
+  const { pathname } = useLocation()
+  const onDark = pathname === '/' && !scrolled
+
   const handleLogout = async () => {
     // httpOnly cookies cannot be cleared from JS, the server has to expire them
     try {
@@ -44,7 +50,11 @@ const Navbar = () => {
 
   const linkClass = ({ isActive }) =>
     `text-[12px] uppercase tracking-[0.18em] transition-colors duration-300 ${
-      isActive ? 'text-bronze-soft' : 'text-espresso-soft hover:text-espresso'
+      isActive
+        ? 'text-bronze-soft'
+        : onDark
+        ? 'text-linen/75 hover:text-linen'
+        : 'text-espresso-soft hover:text-espresso'
     }`
 
   const accountLinks = [
@@ -71,7 +81,7 @@ const Navbar = () => {
         className={`fixed left-0 right-0 top-0 z-50 transition-all duration-500 ${
           scrolled ? 'border-b border-espresso-line bg-cream/90 py-3 backdrop-blur-xl' : 'bg-transparent py-5'
         } ${
-          'text-espresso'
+          onDark ? 'text-linen' : 'text-espresso'
         }`}
       >
         <nav className="mx-auto flex max-w-[1400px] items-center justify-between px-5 sm:px-8">
@@ -83,8 +93,8 @@ const Navbar = () => {
               E
             </span>
             <span className="leading-tight">
-              <span className={`block font-serif text-[17px] tracking-[0.14em] ${'text-espresso'}`}>EASYLET</span>
-              <span className={`block text-[8px] uppercase tracking-[0.42em] ${'text-espresso-soft/60'}`}>Stays &amp; Homes</span>
+              <span className={`block font-serif text-[17px] tracking-[0.14em] ${onDark ? 'text-linen' : 'text-espresso'}`}>EASYLET</span>
+              <span className={`block text-[8px] uppercase tracking-[0.42em] ${onDark ? 'text-linen/55' : 'text-espresso-soft/60'}`}>Stays &amp; Homes</span>
             </span>
           </Link>
 
@@ -95,7 +105,7 @@ const Navbar = () => {
             <li><NavLink to="/map" className={linkClass}>{t('nav.map')}</NavLink></li>
             <li>
               <a href="#how-it-works" className={`text-[12px] uppercase tracking-[0.18em] transition-colors duration-300 ${
-                'text-espresso-soft hover:text-espresso'
+                onDark ? 'text-linen/75 hover:text-linen' : 'text-espresso-soft hover:text-espresso'
               }`}>
                 How it works
               </a>
@@ -112,7 +122,7 @@ const Navbar = () => {
             <button
               onClick={() => dispatch(toggleCart())}
               className={`relative cursor-pointer border-none bg-transparent p-1.5 transition-colors hover:text-bronze ${
-                'text-espresso-soft'
+                onDark ? 'text-linen/75' : 'text-espresso-soft'
               }`}
               title="Your stays"
             >
@@ -175,7 +185,7 @@ const Navbar = () => {
             ) : (
               <div className="hidden items-center gap-3 lg:flex">
                 <Link to="/login" className={`text-[12px] uppercase tracking-[0.18em] transition-colors ${
-                  'text-espresso-soft hover:text-espresso'
+                  onDark ? 'text-linen/75 hover:text-linen' : 'text-espresso-soft hover:text-espresso'
                 }`}>
                   {t('nav.login')}
                 </Link>
@@ -192,7 +202,7 @@ const Navbar = () => {
             {/* Mobile toggle */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className={`cursor-pointer border-none bg-transparent p-1.5 lg:hidden ${'text-espresso'}`}
+              className={`cursor-pointer border-none bg-transparent p-1.5 lg:hidden ${onDark ? 'text-linen' : 'text-espresso'}`}
               aria-label="Open menu"
             >
               <HiMenuAlt4 className="h-6 w-6" />

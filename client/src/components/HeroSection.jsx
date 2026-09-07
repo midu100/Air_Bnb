@@ -17,29 +17,33 @@ const PHRASES = [
   'forest cabins for a long weekend',
 ]
 
-// The card the photograph sits in, before the scroll opens it out
-const DESKTOP_FRAME = { top: '12%', right: '5%', bottom: '12%', left: '45%', radius: '30px' }
-const MOBILE_FRAME = { top: '0%', right: '0%', bottom: '0%', left: '0%', radius: '0px' }
+// A 0..1 ramp between two points on the scroll, eased so nothing snaps
+const ramp = (value, from, to) => {
+  const t = Math.min(1, Math.max(0, (value - from) / (to - from)))
+  return t * t * (3 - 2 * t)
+}
 
 /**
  * The hero walks you into a real listing.
  *
- *   outside   the copy on cream, the home beside it in a tilted card
- *   entering  the card swings flat and opens past every edge of the screen
+ *   outside   the home full screen, the copy standing in front of it
+ *   entering  the photograph pushes past you and the copy flies over your head
  *   inside    the room, in WebGL, yours to look around
  *
- * The card is opened by animating its clip-path rather than scaling it. Scaling
- * an off-centre card drags it off the screen; growing the window instead lets
- * the photograph push toward you while staying where it was put.
+ * Depth is real here rather than implied: the section carries a perspective and
+ * the copy travels along Z, so it passes the camera instead of merely fading.
  *
- * Transform and clip-path are driven by framer-motion, which updates them
- * reliably on a pinned section. Opacity is driven by a phase and CSS instead -
- * motion values for opacity stay frozen here, so they are not trusted with it.
+ * Every opacity is written straight to the DOM. Driving opacity through
+ * framer-motion on a pinned section leaves the value frozen while transforms
+ * carry on updating, which is what stranded this hero on a blank screen before.
  */
 const HeroSection = () => {
   const navigate = useNavigate()
   const { t } = useLocale()
   const sectionRef = useRef(null)
+  const imageRef = useRef(null)
+  const copyRef = useRef(null)
+  const chipRef = useRef(null)
 
   const [destination, setDestination] = useState('')
   const [guests, setGuests] = useState('1')
@@ -48,23 +52,6 @@ const HeroSection = () => {
   const { data: featuredData } = useGetFeaturedPropertiesQuery()
   const showcase = featuredData?.properties?.[0] || null
   const exterior = showcase?.thumbnail || FALLBACK_EXTERIOR
-
-  // ====== Layout
-  // Below the split the photograph goes full bleed and the copy sits on top of
-  // it, so the two grounds need different type colours
-  const [isDesktop, setIsDesktop] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
-  )
-
-  useEffect(() => {
-    const query = window.matchMedia('(min-width: 1024px)')
-    const apply = (event) => setIsDesktop(event.matches)
-    apply(query)
-    query.addEventListener('change', apply)
-    return () => query.removeEventListener('change', apply)
-  }, [])
-
-  const frame = isDesktop ? DESKTOP_FRAME : MOBILE_FRAME
 
   // ====== Typewriter
   const [currentText, setCurrentText] = useState('')
@@ -96,30 +83,26 @@ const HeroSection = () => {
   const panoramaProgress = useRef(0)
   useEffect(() => {
     const apply = (value) => {
-      panoramaProgress.current = Math.max(0, Math.min(1, (value - 0.3) / 0.55))
-      // The last of the scroll is spent inside, not waiting for something to happen
-      setPhase(value > 0.72 ? 'inside' : value > 0.26 ? 'entering' : 'outside')
+      panoramaProgress.current = Math.min(1, Math.max(0, (value - 0.26) / 0.52))
+
+      // The photograph hands over to the room only once it has pushed far
+      // enough past you to have stopped reading as a photograph
+      if (imageRef.current) imageRef.current.style.opacity = String(1 - ramp(value, 0.52, 0.8))
+      if (copyRef.current) copyRef.current.style.opacity = String(1 - ramp(value, 0.04, 0.26))
+      if (chipRef.current) chipRef.current.style.opacity = String(1 - ramp(value, 0.02, 0.18))
+
+      setPhase(value > 0.74 ? 'inside' : value > 0.24 ? 'entering' : 'outside')
     }
     apply(scrollYProgress.get())
     return scrollYProgress.on('change', apply)
   }, [scrollYProgress])
 
-  const clipTop = useTransform(scrollYProgress, [0, 0.72], [frame.top, '0%'])
-  const clipRight = useTransform(scrollYProgress, [0, 0.72], [frame.right, '0%'])
-  const clipBottom = useTransform(scrollYProgress, [0, 0.72], [frame.bottom, '0%'])
-  const clipLeft = useTransform(scrollYProgress, [0, 0.72], [frame.left, '0%'])
-  const clipRadius = useTransform(scrollYProgress, [0, 0.72], [frame.radius, '0px'])
-  const frameClip = useTransform(
-    [clipTop, clipRight, clipBottom, clipLeft, clipRadius],
-    ([top, right, bottom, left, radius]) =>
-      `inset(${top} ${right} ${bottom} ${left} round ${radius})`
-  )
-
-  // The card is turned slightly away at rest and swings square as you approach
-  const frameRotateY = useTransform(scrollYProgress, [0, 0.5], [isDesktop ? -8 : 0, 0])
-  const frameRotateX = useTransform(scrollYProgress, [0, 0.5], [isDesktop ? 3 : 0, 0])
-  const imageScale = useTransform(scrollYProgress, [0, 0.72], [1.06, 1.85])
-  const copyY = useTransform(scrollYProgress, [0, 0.34], [0, -90])
+  // The photograph comes at you; the copy passes over your shoulder
+  const imageScale = useTransform(scrollYProgress, [0, 0.8], [1.04, 3.6])
+  const imageRotate = useTransform(scrollYProgress, [0, 0.5], [1.2, 0])
+  const copyZ = useTransform(scrollYProgress, [0, 0.34], [0, 420])
+  const copyY = useTransform(scrollYProgress, [0, 0.34], [0, -60])
+  const chipZ = useTransform(scrollYProgress, [0, 0.3], [0, 300])
 
   const line = {
     hidden: { y: '112%' },
@@ -137,54 +120,39 @@ const HeroSection = () => {
   const isOutside = phase === 'outside'
   const isInside = phase === 'inside'
 
-  // On cream the type is espresso; over the full-bleed photograph it is linen
-  const onCream = isDesktop
-  const headingClass = onCream ? 'text-espresso' : 'text-linen'
-  const bodyClass = onCream ? 'text-espresso-soft' : 'text-linen/75'
-  const fieldLabelClass = onCream ? 'text-espresso-soft/60' : 'text-linen/50'
-  const fieldTextClass = onCream ? 'text-espresso' : 'text-linen'
-  const formClass = onCream
-    ? 'border-espresso-line bg-linen shadow-[0_18px_50px_-30px_rgba(28,24,20,0.5)]'
-    : 'border-linen/25 bg-espresso/35 backdrop-blur-xl'
-
   return (
-    <section ref={sectionRef} className="relative h-[200vh]">
-      <div className="sticky top-0 h-screen overflow-hidden bg-cream">
+    <section ref={sectionRef} className="relative h-[240vh]">
+      <div className="sticky top-0 h-screen overflow-hidden bg-cream" style={{ perspective: '1200px' }}>
 
-        {/* ====== The room, waiting behind the card ====== */}
+        {/* ====== The room, waiting behind the photograph ====== */}
         <div className="absolute inset-0">
           <ScrollPanorama imageSrc={PANORAMA} progressRef={panoramaProgress} interactive={isInside} />
         </div>
 
-        {/* ====== The home, in a card that opens until you are through it ====== */}
-        <div className="absolute inset-0" style={{ perspective: '1800px' }}>
-          <motion.div
-            style={{ clipPath: frameClip, rotateY: frameRotateY, rotateX: frameRotateX }}
-            className={`absolute inset-0 will-change-transform transition-opacity duration-500 ${
-              isInside ? 'opacity-0' : 'opacity-100'
-            }`}
-          >
-            <motion.img
-              src={exterior}
-              alt={showcase ? showcase.title : 'A home on the platform'}
-              style={{ scale: imageScale }}
-              className="h-full w-full object-cover will-change-transform"
-            />
-            {/* Only the full-bleed layout needs a scrim, because only there
-                does the copy sit on the photograph */}
-            {!onCream && <div className="absolute inset-0 bg-espresso/45" />}
-          </motion.div>
-        </div>
+        {/* ====== The home, full screen, coming toward you ====== */}
+        <motion.div
+          ref={imageRef}
+          style={{ scale: imageScale, rotateX: imageRotate }}
+          className="absolute inset-0 will-change-transform"
+        >
+          <img
+            src={exterior}
+            alt={showcase ? showcase.title : 'A home on the platform'}
+            className="h-full w-full object-cover"
+          />
+          {/* Dark enough at the foot for the copy to sit on, clear at the top
+              so the home is still the thing you are looking at */}
+          <div className="absolute inset-0 bg-gradient-to-t from-espresso/88 via-espresso/45 to-espresso/50" />
+        </motion.div>
 
-        {/* ====== The listing the card is showing ====== */}
+        {/* ====== The listing the photograph is showing ====== */}
         {showcase && (
-          <div
-            className={`pointer-events-none absolute z-10 hidden transition-opacity duration-500 lg:block ${
-              isOutside ? 'opacity-100' : 'opacity-0'
-            }`}
-            style={{ left: '48%', bottom: '16%' }}
+          <motion.div
+            ref={chipRef}
+            style={{ z: chipZ }}
+            className="pointer-events-none absolute right-6 top-28 z-10 hidden lg:block"
           >
-            <div className="flex items-center gap-4 rounded-2xl border border-linen/25 bg-espresso/45 px-5 py-3.5 backdrop-blur-xl">
+            <div className="flex items-center gap-4 rounded-2xl border border-linen/20 bg-espresso/45 px-5 py-3.5 backdrop-blur-xl">
               <div>
                 <p className="text-[13px] text-linen">{showcase.title}</p>
                 <p className="mt-1 flex items-center gap-1.5 text-[11px] text-linen/60">
@@ -198,109 +166,92 @@ const HeroSection = () => {
                 <p className="text-[10px] uppercase tracking-[0.16em] text-linen/50">per night</p>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* ====== Copy and search ====== */}
-        <div className="pointer-events-none relative z-10 mx-auto flex h-full max-w-[1400px] flex-col justify-end px-5 pb-16 sm:px-8 sm:pb-20 lg:max-w-none lg:justify-center lg:pb-0 lg:pl-[7vw] lg:pr-0">
-          <div className="w-full lg:max-w-[36vw]">
-            <motion.div
-              style={{ y: copyY }}
-              className={`transition-opacity duration-500 ${isOutside ? 'opacity-100' : 'opacity-0'}`}
+        <motion.div
+          ref={copyRef}
+          style={{ z: copyZ, y: copyY }}
+          className="pointer-events-none relative z-10 mx-auto flex h-full max-w-[1400px] flex-col justify-end px-5 pb-16 will-change-transform sm:px-8 sm:pb-20"
+        >
+          <p className="eyebrow text-bronze-soft">Nightly · Monthly · Long lease</p>
+
+          <h1 className="mt-6 max-w-[16ch] font-serif text-[46px] font-light leading-[0.96] text-linen sm:text-[70px] lg:text-[92px]">
+            {['Step inside', 'before you book'].map((text, i) => (
+              <span key={text} className="block overflow-hidden">
+                <motion.span variants={line} custom={i} initial="hidden" animate="show" className="block">
+                  {text}
+                </motion.span>
+              </span>
+            ))}
+          </h1>
+
+          <p className="mt-7 max-w-[52ch] text-[15px] leading-relaxed text-linen/75 sm:text-[17px]">
+            One platform for{' '}
+            <span className="text-bronze-soft">
+              {currentText}
+              <span
+                className="ml-0.5 inline-block w-px animate-pulse bg-bronze-soft align-middle"
+                style={{ height: '1em' }}
+              />
+            </span>
+          </p>
+
+          {/* Someone here to find a home should never have to scroll to search */}
+          <div className={`mt-9 ${isOutside ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+            <form
+              onSubmit={handleSearch}
+              className="flex w-full max-w-2xl flex-col gap-px overflow-hidden rounded-[22px] border border-linen/25 bg-espresso/35 backdrop-blur-xl sm:flex-row"
             >
-              <p className="eyebrow text-bronze">Nightly · Monthly · Long lease</p>
+              <label className="flex-1 px-6 py-4">
+                <span className="eyebrow block text-linen/50">{t('explore.destination')}</span>
+                <input
+                  type="text"
+                  value={destination}
+                  onChange={(e) => setDestination(e.target.value)}
+                  placeholder={t('explore.whereTo')}
+                  className="mt-1.5 w-full bg-transparent text-[15px] text-linen placeholder-linen/40 focus:outline-none"
+                />
+              </label>
 
-              <h1
-                className={`mt-6 max-w-[16ch] font-serif text-[46px] font-light leading-[0.96] sm:text-[70px] lg:text-[76px] xl:text-[88px] ${headingClass}`}
-              >
-                {['Step inside', 'before you book'].map((text, i) => (
-                  <span key={text} className="block overflow-hidden">
-                    <motion.span variants={line} custom={i} initial="hidden" animate="show" className="block">
-                      {text}
-                    </motion.span>
-                  </span>
-                ))}
-              </h1>
-
-              <p className={`mt-7 max-w-[46ch] text-[15px] leading-relaxed sm:text-[17px] ${bodyClass}`}>
-                One platform for{' '}
-                <span className="text-bronze">
-                  {currentText}
-                  <span
-                    className="ml-0.5 inline-block w-px animate-pulse bg-bronze align-middle"
-                    style={{ height: '1em' }}
-                  />
-                </span>
-              </p>
-            </motion.div>
-
-            {/* Someone here to find a home should never have to scroll to search */}
-            <div
-              className={`mt-9 transition-opacity duration-500 ${
-                isOutside ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
-              }`}
-            >
-              <form
-                onSubmit={handleSearch}
-                className={`flex w-full max-w-2xl flex-col gap-px overflow-hidden rounded-[22px] border sm:flex-row ${formClass}`}
-              >
-                <label className="flex-1 px-6 py-4">
-                  <span className={`eyebrow block ${fieldLabelClass}`}>{t('explore.destination')}</span>
-                  <input
-                    type="text"
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                    placeholder={t('explore.whereTo')}
-                    className={`mt-1.5 w-full bg-transparent text-[15px] focus:outline-none ${fieldTextClass} ${
-                      onCream ? 'placeholder-espresso-soft/40' : 'placeholder-linen/40'
-                    }`}
-                  />
-                </label>
-
-                <label
-                  className={`px-6 py-4 sm:border-l ${onCream ? 'sm:border-espresso-line' : 'sm:border-linen/20'}`}
+              <label className="px-6 py-4 sm:border-l sm:border-linen/20">
+                <span className="eyebrow block text-linen/50">{t('explore.guests')}</span>
+                <select
+                  value={guests}
+                  onChange={(e) => setGuests(e.target.value)}
+                  className="mt-1.5 w-full cursor-pointer bg-transparent text-[15px] text-linen focus:outline-none sm:w-20"
                 >
-                  <span className={`eyebrow block ${fieldLabelClass}`}>{t('explore.guests')}</span>
-                  <select
-                    value={guests}
-                    onChange={(e) => setGuests(e.target.value)}
-                    className={`mt-1.5 w-full cursor-pointer bg-transparent text-[15px] focus:outline-none sm:w-20 ${fieldTextClass}`}
-                  >
-                    {[1, 2, 4, 6, 8].map((count) => (
-                      <option key={count} value={count} className="bg-linen text-espresso">
-                        {count}{count === 8 ? '+' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  {[1, 2, 4, 6, 8].map((count) => (
+                    <option key={count} value={count} className="bg-espresso text-linen">
+                      {count}{count === 8 ? '+' : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-                <button
-                  type="submit"
-                  className="group flex items-center justify-center gap-3 bg-bronze px-8 py-5 text-[12px] uppercase tracking-[0.22em] text-linen transition-colors duration-500 hover:bg-bronze-soft"
-                >
-                  <FiSearch size={15} />
-                  <span className="hidden sm:inline">Search</span>
-                </button>
-              </form>
-
-              {/* What a renter wants to know before typing anything */}
-              <div
-                className={`mt-7 hidden items-center gap-7 text-[12px] lg:flex ${
-                  onCream ? 'text-espresso-soft/70' : 'text-linen/60'
-                }`}
+              <button
+                type="submit"
+                className="group flex items-center justify-center gap-3 bg-bronze px-8 py-5 text-[12px] uppercase tracking-[0.22em] text-linen transition-colors duration-500 hover:bg-bronze-soft"
               >
-                <span className="flex items-center gap-2">
-                  <FiStar size={13} className="text-bronze" />
-                  Every home visited before it is listed
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="h-1 w-1 rounded-full bg-bronze" />
-                  Free cancellation on most stays
-                </span>
-              </div>
+                <FiSearch size={15} />
+                <span className="hidden sm:inline">Search</span>
+              </button>
+            </form>
+
+            {/* What a renter wants to know before typing anything */}
+            <div className="mt-7 hidden items-center gap-7 text-[12px] text-linen/60 lg:flex">
+              <span className="flex items-center gap-2">
+                <FiStar size={13} className="text-bronze-soft" />
+                Every home visited before it is listed
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="h-1 w-1 rounded-full bg-bronze-soft" />
+                Free cancellation on most stays
+              </span>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* ====== Inside ====== */}
         <div
@@ -335,21 +286,15 @@ const HeroSection = () => {
 
         {/* ====== Scroll cue ====== */}
         <div
-          className={`absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 transition-opacity duration-500 lg:left-[7vw] lg:translate-x-0 lg:items-start ${
+          className={`absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 transition-opacity duration-500 ${
             isOutside ? 'opacity-100' : 'opacity-0'
           }`}
         >
-          <span
-            className={`text-[9px] uppercase tracking-[0.4em] ${
-              onCream ? 'text-espresso-soft/50' : 'text-linen/50'
-            }`}
-          >
-            Scroll to step inside
-          </span>
+          <span className="text-[9px] uppercase tracking-[0.4em] text-linen/50">Scroll to step inside</span>
           <motion.span
             animate={{ y: [0, 7, 0] }}
             transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-            className="text-bronze"
+            className="text-bronze-soft"
           >
             <FiArrowDown size={14} />
           </motion.span>
