@@ -5,6 +5,9 @@ import CurvedCarousel from '../components/CurvedCarousel'
 import CategoryCarousel from '../components/CategoryCarousel'
 import TrendingDestinations from '../components/TrendingDestinations'
 import PropertyCarousel from '../components/PropertyCarousel'
+import StepInsideShowcase from '../components/StepInsideShowcase'
+import RentalHorizons from '../components/RentalHorizons'
+import HostEarnings from '../components/HostEarnings'
 import HowItWorks from '../components/HowItWorks'
 import Testimonials from '../components/Testimonials'
 
@@ -79,6 +82,12 @@ const Home = () => {
       {/* Dynamic Video Hero */}
       <HeroSection />
 
+      {/* Walk through three real homes the way the hero walked you into one */}
+      {!loading && <StepInsideShowcase properties={properties} />}
+
+      {/* The three ways to take a home here - the platform's whole point */}
+      <RentalHorizons />
+
       {/* Browse by Property Type — Image Carousel */}
       <CategoryCarousel
         activeCategory={activeCategory}
@@ -122,6 +131,9 @@ const Home = () => {
       <div className="bg-cream">
         <HowItWorks />
       </div>
+
+      {/* What the same home earns on each horizon */}
+      <HostEarnings />
 
       {/* Testimonials */}
       <Testimonials />
