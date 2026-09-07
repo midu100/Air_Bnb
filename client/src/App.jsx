@@ -97,17 +97,18 @@ const App = () => {
           </Route>
 
           {/* Main frontend routes */}
+          {/* Auth pages stand on their own - they bring their own way back */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/verify-otp" element={<VerifyOtp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+
           <Route path="/" element={<LayoutOne />}>
             <Route index element={<Home />} />
             <Route path="properties" element={<Properties />} />
             <Route path="map" element={<MapExplore />} />
             <Route path="property/:id" element={<PropertyDetails />} />
-            <Route path="login" element={<Login />} />
-            <Route path="register" element={<Register />} />
-            <Route path="verify-otp" element={<VerifyOtp />} />
-            <Route path="forgot-password" element={<ForgotPassword />} />
-            <Route path="reset-password" element={<ResetPassword />} />
-
             {/* User-specific routes — must be logged in */}
             <Route path="my-bookings" element={
               <ProtectedRoute><MyBookings /></ProtectedRoute>

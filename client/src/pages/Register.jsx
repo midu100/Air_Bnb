@@ -1,34 +1,10 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router";
-
+import { motion } from "framer-motion";
+import { FiArrowUpRight, FiArrowLeft } from "react-icons/fi";
 import toast, { Toaster } from "react-hot-toast";
-import AuthImageSlider from "../components/common/AuthImageSlider";
 import AuthFormInput from "../components/common/AuthFormInput";
-import AuthButton from "../components/common/AuthButton";
-import AuthSocialSection from "../components/common/AuthSocialSection";
-import ButtonTwo from "../components/common/ButtonTwo";
-
-const slides = [
-  {
-    image: "https://picsum.photos/800/1000?random=4",
-    title: "Find Your\nPerfect Stay.",
-    subtitle:
-      "Discover unique homes and experiences around the world, tailored just for you.",
-  },
-  {
-    image: "https://picsum.photos/800/1000?random=5",
-    title: "Explore The\nWorld.",
-    subtitle:
-      "From cozy cabins to luxury villas — your next adventure starts here.",
-  },
-  {
-    image: "https://picsum.photos/800/1000?random=6",
-    title: "Travel With\nConfidence.",
-    subtitle:
-      "Trusted hosts, verified reviews, and seamless booking at your fingertips.",
-  },
-];
-
+import AuthPanel from "../components/common/AuthPanel";
 import { useSignUpMutation } from "../store/api/authApi";
 
 const Register = () => {
@@ -80,6 +56,7 @@ const Register = () => {
         navigate("/verify-otp", { state: { email: formData.email } });
       }, 2000);
     } catch (error) {
+      console.log(error);
       const errorMsg = error?.data?.message || "Registration failed. Please check your inputs.";
       setErrors(errorMsg);
       toast.error(errorMsg, {
@@ -89,141 +66,109 @@ const Register = () => {
     }
   };
 
-
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-[1060px] bg-white/60 backdrop-blur-2xl rounded-[32px] shadow-[0_30px_80px_-20px_rgba(100,60,180,0.15)] overflow-hidden flex flex-col md:flex-row border border-white/70">
-        <Toaster />
+    <div className="grid min-h-screen bg-linen lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <Toaster />
 
-        {/* Left */}
-        <AuthImageSlider slides={slides} minHeight="680px" />
+      {/* ====== A home, so the page looks like the platform it belongs to ====== */}
+      <AuthPanel
+        eyebrow="Create an account"
+        title={"Somewhere to stay,\nfor as long as you need"}
+        blurb="One account covers all three: a few nights away, a furnished month between contracts, or a home on a proper lease."
+      />
 
-        {/* Right */}
-        <div className="w-full md:w-[54%] p-8 sm:p-10 lg:px-14 lg:py-12 flex flex-col justify-center">
-          {/* Mobile Header */}
-          <div className="flex md:hidden justify-between items-center mb-8">
+      {/* ====== The form ====== */}
+      <div className="flex items-center justify-center px-6 py-24 sm:px-10">
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="w-full max-w-[400px]"
+        >
+          <Link
+            to="/"
+            className="mb-10 inline-flex items-center gap-2 text-[12px] text-espresso-soft/60 transition-colors duration-300 hover:text-espresso lg:hidden"
+          >
+            <FiArrowLeft size={13} />
+            Back to the site
+          </Link>
+
+          <h1 className="font-sans text-[34px] font-semibold leading-[1.05] tracking-[-0.03em] text-espresso sm:text-[40px]">
+            Create account
+          </h1>
+
+          <p className="mt-3 text-[13.5px] text-espresso-soft/75">
+            Already have one?{" "}
             <Link
-              to="/"
-              className="text-gray-900 text-lg font-black tracking-tight"
+              to="/login"
+              className="font-medium text-espresso underline decoration-espresso-line underline-offset-4 transition-colors duration-300 hover:text-bronze hover:decoration-bronze"
             >
-              KAZI'S NATION
+              Sign in
             </Link>
+          </p>
 
-            <Link
-              to="/"
-              className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-900 transition-colors"
+          {errors && (
+            <p className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
+              {errors}
+            </p>
+          )}
+
+          <form className="mt-8 space-y-5" onSubmit={handleRegister}>
+            <AuthFormInput
+              label="Full name"
+              type="text"
+              placeholder="Your name"
+              name="name"
+              value={formData.name}
+              onChange={(e) => {
+                setFormData((prev) => ({ ...prev, name: e.target.value }));
+                setErrors("");
+              }}
+            />
+
+            <AuthFormInput
+              label="Email address"
+              type="email"
+              placeholder="you@example.com"
+              name="email"
+              value={formData.email}
+              onChange={(e) => {
+                setFormData((prev) => ({ ...prev, email: e.target.value }));
+                setErrors("");
+              }}
+            />
+
+            <AuthFormInput
+              label="Password"
+              type="password"
+              placeholder="At least 6 characters"
+              name="password"
+              value={formData.password}
+              onChange={(e) => {
+                setFormData((prev) => ({ ...prev, password: e.target.value }));
+                setErrors("");
+              }}
+            />
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="group inline-flex w-full items-center justify-center gap-2.5 rounded-lg border-none bg-espresso px-6 py-4 text-[13px] font-medium text-linen transition-colors duration-300 hover:bg-espresso-soft disabled:cursor-not-allowed disabled:bg-espresso/40"
             >
-              ← Back
-            </Link>
-          </div>
-
-          <div className="max-w-[360px] mx-auto w-full">
-            {/* Heading */}
-            <div className="mb-8">
-              <h1 className="text-3xl md:text-[33px] font-black text-gray-900 tracking-tight mb-2">
-                Create Account
-              </h1>
-
-              <p className="text-[14px] text-gray-400 font-medium leading-relaxed">
-                Already have an account?{" "}
-                <Link
-                  to="/login"
-                  className="text-violet-600 hover:text-violet-700 font-semibold underline underline-offset-4 decoration-violet-300"
-                >
-                  Sign in
-                </Link>
-              </p>
-            </div>
-
-            {errors && (
-              <p className="mb-5 bg-amber-300 rounded-md py-2 text-center text-red-500 font-medium">
-                {errors}
-              </p>
-            )}
-
-            {/* Form */}
-            <form className="space-y-5" onSubmit={handleRegister}>
-              <AuthFormInput
-                label="Full Name"
-                type="text"
-                placeholder="John Doe"
-                name="name"
-                onChange={(e) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    name: e.target.value,
-                  }));
-                  setErrors("");
-                }}
-              />
-
-              <AuthFormInput
-                label="Email Address"
-                type="email"
-                placeholder="you@example.com"
-                name="email"
-                onChange={(e) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    email: e.target.value,
-                  }));
-                  setErrors("");
-                }}
-              />
-
-              <AuthFormInput
-                label="Password"
-                type="password"
-                placeholder="Min. 8 characters"
-                name="password"
-                onChange={(e) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    password: e.target.value,
-                  }));
-                  setErrors("");
-                }}
-              />
-
-              {/* Terms */}
-              <div className="flex items-start gap-2.5">
-                <input
-                  type="checkbox"
-                  id="terms"
-                  required
-                  className="w-4 h-4 mt-0.5 rounded border-gray-300 accent-violet-600"
+              {isLoading ? "Creating account..." : "Create account"}
+              {!isLoading && (
+                <FiArrowUpRight
+                  size={15}
+                  className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
                 />
+              )}
+            </button>
 
-                <label
-                  htmlFor="terms"
-                  className="text-[12px] text-gray-400 font-medium cursor-pointer select-none leading-relaxed"
-                >
-                  I agree to the{" "}
-                  <a
-                    href="#"
-                    className="text-violet-600 hover:text-violet-700 font-semibold"
-                  >
-                    Terms of Service
-                  </a>{" "}
-                  and{" "}
-                  <a
-                    href="#"
-                    className="text-violet-600 hover:text-violet-700 font-semibold"
-                  >
-                    Privacy Policy
-                  </a>
-                </label>
-              </div>
-
-              <div className="pt-2">
-                {/* <AuthButton text="Create Account" /> */}
-                <ButtonTwo name={'Create Account'}/>
-              </div>
-            </form>
-
-            <AuthSocialSection dividerText="Or sign up with" />
-          </div>
-        </div>
+            <p className="pt-1 text-[11.5px] leading-relaxed text-espresso-soft/55">
+              We will email you a one-time code to confirm the address before the account is active.
+            </p>
+          </form>
+        </motion.div>
       </div>
     </div>
   );

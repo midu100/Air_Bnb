@@ -1,17 +1,11 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router";
+import { motion } from "framer-motion";
+import { FiArrowUpRight, FiArrowLeft } from "react-icons/fi";
 import toast, { Toaster } from "react-hot-toast";
-import AuthImageSlider from "../components/common/AuthImageSlider";
-import ButtonTwo from "../components/common/ButtonTwo";
+import AuthFormInput from "../components/common/AuthFormInput";
+import AuthPanel from "../components/common/AuthPanel";
 import { useVerifyOtpMutation } from "../store/api/authApi";
-
-const slides = [
-  {
-    image: "https://picsum.photos/800/1000?random=7",
-    title: "Verify Your\nIdentity.",
-    subtitle: "We sent an email with a 6-digit OTP code to verify your account.",
-  }
-];
 
 const VerifyOtp = () => {
   const navigate = useNavigate();
@@ -21,7 +15,7 @@ const VerifyOtp = () => {
   const [email, setEmail] = useState(defaultEmail);
   const [otp, setOtp] = useState("");
   const [errors, setErrors] = useState("");
-  
+
   const [verifyOtp, { isLoading }] = useVerifyOtpMutation();
 
   const handleVerify = async (e) => {
@@ -45,6 +39,7 @@ const VerifyOtp = () => {
         navigate("/login");
       }, 1500);
     } catch (error) {
+      console.log(error);
       const errorMsg = error?.data?.message || "Invalid OTP code or expired.";
       setErrors(errorMsg);
       toast.error(errorMsg, {
@@ -54,83 +49,85 @@ const VerifyOtp = () => {
     }
   };
 
-
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-[1060px] bg-white/60 backdrop-blur-2xl rounded-[32px] shadow-[0_30px_80px_-20px_rgba(100,60,180,0.15)] overflow-hidden flex flex-col md:flex-row border border-white/70">
-        <Toaster />
+    <div className="grid min-h-screen bg-linen lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <Toaster />
 
-        {/* Left */}
-        <AuthImageSlider slides={slides} minHeight="620px" />
+      <AuthPanel
+        eyebrow="One last step"
+        title={"Confirm the\naddress is yours"}
+        blurb="We sent a six-digit code to your email. Entering it here activates the account so you can book."
+      />
 
-        {/* Right */}
-        <div className="w-full md:w-[54%] p-8 sm:p-10 lg:px-14 lg:py-12 flex flex-col justify-center">
-          <div className="max-w-[360px] mx-auto w-full">
-            {/* Heading */}
-            <div className="mb-8">
-              <h1 className="text-3xl md:text-[33px] font-black text-gray-900 tracking-tight mb-2">
-                Verify Email
-              </h1>
-              <p className="text-[14px] text-gray-400 font-medium leading-relaxed">
-                Enter the one-time code sent to your email.
-              </p>
-            </div>
+      <div className="flex items-center justify-center px-6 py-24 sm:px-10">
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="w-full max-w-[400px]"
+        >
+          <Link
+            to="/register"
+            className="mb-10 inline-flex items-center gap-2 text-[12px] text-espresso-soft/60 transition-colors duration-300 hover:text-espresso"
+          >
+            <FiArrowLeft size={13} />
+            Back to sign up
+          </Link>
 
-            {errors && (
-              <p className="mb-5 bg-amber-300 rounded-md py-2 text-center text-red-500 font-medium text-xs">
-                {errors}
-              </p>
-            )}
+          <h1 className="font-sans text-[34px] font-semibold leading-[1.05] tracking-[-0.03em] text-espresso sm:text-[40px]">
+            Verify email
+          </h1>
 
-            {/* Form */}
-            <form className="space-y-5" onSubmit={handleVerify}>
-              <div className="space-y-1.5">
-                <label className="block text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setErrors("");
-                  }}
-                  className="w-full bg-white/50 border border-gray-200 text-gray-800 text-sm font-semibold rounded-2xl px-5 py-4 focus:outline-none focus:border-violet-600 focus:ring-4 focus:ring-violet-600/10 transition-all shadow-xs placeholder:text-gray-300"
+          <p className="mt-3 text-[13.5px] text-espresso-soft/75">
+            {defaultEmail ? `Sent to ${defaultEmail}.` : "Enter the code we emailed you."}
+          </p>
+
+          {errors && (
+            <p className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
+              {errors}
+            </p>
+          )}
+
+          <form className="mt-8 space-y-5" onSubmit={handleVerify}>
+            <AuthFormInput
+              label="Email address"
+              type="email"
+              placeholder="you@example.com"
+              name="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setErrors("");
+              }}
+            />
+
+            <AuthFormInput
+              label="Six-digit code"
+              type="text"
+              placeholder="000000"
+              name="otp"
+              value={otp}
+              onChange={(e) => {
+                setOtp(e.target.value);
+                setErrors("");
+              }}
+            />
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="group inline-flex w-full items-center justify-center gap-2.5 rounded-lg border-none bg-espresso px-6 py-4 text-[13px] font-medium text-linen transition-colors duration-300 hover:bg-espresso-soft disabled:cursor-not-allowed disabled:bg-espresso/40"
+            >
+              {isLoading ? "Verifying..." : "Verify email"}
+              {!isLoading && (
+                <FiArrowUpRight
+                  size={15}
+                  className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
                 />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">
-                  OTP Code
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Enter 6-digit code"
-                  value={otp}
-                  onChange={(e) => {
-                    setOtp(e.target.value);
-                    setErrors("");
-                  }}
-                  className="w-full bg-white/50 border border-gray-200 text-gray-800 text-sm font-semibold rounded-2xl px-5 py-4 focus:outline-none focus:border-violet-600 focus:ring-4 focus:ring-violet-600/10 transition-all shadow-xs placeholder:text-gray-300"
-                />
-              </div>
-
-              <div className="pt-2">
-                <ButtonTwo name="Verify OTP" />
-              </div>
-            </form>
-
-            <div className="mt-8 text-center text-xs text-gray-400">
-              Back to{" "}
-              <Link to="/login" className="font-semibold text-violet-600 hover:underline">
-                Sign In
-              </Link>
-            </div>
-          </div>
-        </div>
+              )}
+            </button>
+          </form>
+        </motion.div>
       </div>
     </div>
   );

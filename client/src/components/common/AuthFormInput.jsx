@@ -1,12 +1,12 @@
-
 import React, { useState } from "react";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 const AuthFormInput = ({
   label,
   type = "text",
   placeholder = "",
   name = "",
+  value,
   onChange,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -14,24 +14,19 @@ const AuthFormInput = ({
   const isPassword = type === "password";
 
   return (
-    <div className="space-y-1.5">
-      <label className="text-[14px] font-bold text-gray-800 uppercase tracking-widest pl-0.5">
+    <div className="space-y-2">
+      <label className="block text-[10px] font-medium uppercase tracking-[0.16em] text-espresso-soft/60">
         {label}
       </label>
 
       <div className="relative">
         <input
-          type={
-            isPassword
-              ? showPassword
-                ? "text"
-                : "password"
-              : type
-          }
+          type={isPassword ? (showPassword ? "text" : "password") : type}
           name={name}
           placeholder={placeholder}
+          value={value}
           onChange={onChange}
-          className={`w-full border border-gray-500 bg-white/50 backdrop-blur-sm rounded-xl px-5 py-3.5 text-[14px] outline-none focus:border-violet-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] transition-all font-medium placeholder:text-gray-500 text-gray-800 ${
+          className={`w-full rounded-lg border border-espresso-line bg-white px-4 py-3.5 text-[14px] text-espresso outline-none transition-all duration-300 placeholder:text-espresso-soft/40 focus:border-espresso focus:ring-2 focus:ring-espresso/10 ${
             isPassword ? "pr-12" : ""
           }`}
         />
@@ -40,13 +35,10 @@ const AuthFormInput = ({
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors cursor-pointer"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer border-none bg-transparent p-0 text-espresso-soft/50 transition-colors hover:text-espresso"
           >
-            {showPassword ? (
-              <FaEyeSlash size={17} />
-            ) : (
-              <FaEye size={17} />
-            )}
+            {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
           </button>
         )}
       </div>
@@ -55,4 +47,3 @@ const AuthFormInput = ({
 };
 
 export default AuthFormInput;
-

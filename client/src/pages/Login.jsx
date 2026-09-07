@@ -1,34 +1,10 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router";
-
+import { motion } from "framer-motion";
+import { FiArrowUpRight, FiArrowLeft } from "react-icons/fi";
 import toast, { Toaster } from "react-hot-toast";
-import AuthImageSlider from "../components/common/AuthImageSlider";
 import AuthFormInput from "../components/common/AuthFormInput";
-import AuthButton from "../components/common/AuthButton";
-import AuthSocialSection from "../components/common/AuthSocialSection";
-import ButtonOne from "../components/common/ButtonOne";
-import ButtonTwo from "../components/common/ButtonTwo";
-
-const slides = [
-  {
-    image: "https://picsum.photos/800/1000?random=1",
-    title: "Elevate Your\nWardrobe Today.",
-    subtitle:
-      "Experience the pinnacle of fashion with tailored recommendations and exclusive collections.",
-  },
-  {
-    image: "https://picsum.photos/800/1000?random=2",
-    title: "Discover New\nCollections.",
-    subtitle:
-      "Explore curated styles handpicked by our fashion experts for every season.",
-  },
-  {
-    image: "https://picsum.photos/800/1000?random=3",
-    title: "Style Meets\nComfort.",
-    subtitle:
-      "Premium quality meets everyday comfort. Dress to impress, effortlessly.",
-  },
-];
+import AuthPanel from "../components/common/AuthPanel";
 import { useSignInMutation, useLazyGetProfileQuery } from "../store/api/authApi";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "../store/slices/authSlice";
@@ -59,8 +35,7 @@ const SignIn = () => {
 
     try {
       const res = await signIn(formData).unwrap();
-      console.log("Login API Response:", res);
-      
+
       toast.success(res.message || "Login Successful!", {
         duration: 3000,
         position: "top-center",
@@ -68,9 +43,8 @@ const SignIn = () => {
 
       // Get profile to check role
       const profile = await triggerGetProfile().unwrap();
-      console.log("Profile Data:", profile);
       const role = profile?.userData?.role;
-      
+
       // Save credentials in Redux
       dispatch(setCredentials({ user: profile?.userData, token: null }));
 
@@ -82,7 +56,7 @@ const SignIn = () => {
         }
       }, 1500);
     } catch (error) {
-      console.error("Login / Profile Fetch Error:", error);
+      console.log(error);
       const errorMsg = error?.data?.message || "Something went wrong. Please check your credentials.";
       setErrors(errorMsg);
       toast.error(errorMsg, {
@@ -92,122 +66,111 @@ const SignIn = () => {
     }
   };
 
-
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-[1060px] bg-white/60 backdrop-blur-2xl rounded-[32px] shadow-[0_30px_80px_-20px_rgba(100,60,180,0.15)] overflow-hidden flex flex-col md:flex-row border border-white/70">
-        <Toaster />
+    <div className="grid min-h-screen bg-linen lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <Toaster />
 
-        {/* Left */}
-        <AuthImageSlider slides={slides} minHeight="620px" />
+      {/* ====== A home, so the page looks like the platform it belongs to ====== */}
+      <AuthPanel
+        eyebrow="Welcome back"
+        title={"Your next\nplace is waiting"}
+        blurb="Pick up where you left off - the homes you saved, the trips you booked and the leases you signed are all here."
+      />
 
-        {/* Right */}
-        <div className="w-full md:w-[54%] p-8 sm:p-10 lg:px-14 lg:py-12 flex flex-col justify-center">
-          {/* Mobile Header */}
-          <div className="flex md:hidden justify-between items-center mb-8">
+      {/* ====== The form ====== */}
+      <div className="flex items-center justify-center px-6 py-24 sm:px-10">
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="w-full max-w-[400px]"
+        >
+          <Link
+            to="/"
+            className="mb-10 inline-flex items-center gap-2 text-[12px] text-espresso-soft/60 transition-colors duration-300 hover:text-espresso lg:hidden"
+          >
+            <FiArrowLeft size={13} />
+            Back to the site
+          </Link>
+
+          <h1 className="font-sans text-[34px] font-semibold leading-[1.05] tracking-[-0.03em] text-espresso sm:text-[40px]">
+            Sign in
+          </h1>
+
+          <p className="mt-3 text-[13.5px] text-espresso-soft/75">
+            No account yet?{" "}
             <Link
-              to="/"
-              className="text-gray-900 text-lg font-black tracking-tight"
+              to="/register"
+              className="font-medium text-espresso underline decoration-espresso-line underline-offset-4 transition-colors duration-300 hover:text-bronze hover:decoration-bronze"
             >
-              KAZI'S NATION
+              Create one
             </Link>
+          </p>
 
-            <Link
-              to="/"
-              className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-900 transition-colors"
-            >
-              ← Back
-            </Link>
-          </div>
+          {errors && (
+            <p className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
+              {errors}
+            </p>
+          )}
 
-          <div className="max-w-[360px] mx-auto w-full">
-            {/* Heading */}
-            <div className="mb-8">
-              <h1 className="text-3xl md:text-[33px] font-black text-gray-900 tracking-tight mb-2">
-                Welcome Back
-              </h1>
+          <form className="mt-8 space-y-5" onSubmit={handleLogin}>
+            <AuthFormInput
+              label="Email address"
+              type="email"
+              placeholder="you@example.com"
+              name="email"
+              value={formData.email}
+              onChange={(e) => {
+                setFormData((prev) => ({ ...prev, email: e.target.value }));
+                setErrors("");
+              }}
+            />
 
-              <p className="text-[14px] text-gray-400 font-medium leading-relaxed">
-                Don't have an account?{" "}
-                <Link
-                  to="/register"
-                  className="text-violet-600 hover:text-violet-700 font-semibold underline underline-offset-4 decoration-violet-300"
-                >
-                  Sign up
-                </Link>
-              </p>
+            <AuthFormInput
+              label="Password"
+              type="password"
+              placeholder="Enter your password"
+              name="password"
+              value={formData.password}
+              onChange={(e) => {
+                setFormData((prev) => ({ ...prev, password: e.target.value }));
+                setErrors("");
+              }}
+            />
+
+            <div className="flex items-center justify-between pt-1">
+              <label htmlFor="remember" className="flex cursor-pointer items-center gap-2.5">
+                <input
+                  type="checkbox"
+                  id="remember"
+                  className="h-4 w-4 cursor-pointer rounded border-espresso-line accent-espresso"
+                />
+                <span className="text-[12.5px] text-espresso-soft/75">Remember me</span>
+              </label>
+
+              <Link
+                to="/forgot-password"
+                className="text-[12.5px] text-espresso-soft/75 transition-colors duration-300 hover:text-espresso"
+              >
+                Forgot password?
+              </Link>
             </div>
 
-            {errors && (
-              <p className="mb-5 bg-amber-300 rounded-md py-2 text-center text-red-500 font-medium">
-                {errors}
-              </p>
-            )}
-
-            {/* Form */}
-            <form className="space-y-5" onSubmit={handleLogin}>
-              <AuthFormInput
-                label="Email Address"
-                type="email"
-                placeholder="you@example.com"
-                name="email"
-                onChange={(e) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    email: e.target.value,
-                  }));
-                  setErrors("");
-                }}
-              />
-
-              <AuthFormInput
-                label="Password"
-                type="password"
-                placeholder="Enter your password"
-                name="password"
-                onChange={(e) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    password: e.target.value,
-                  }));
-                  setErrors("");
-                }}
-              />
-
-              {/* Remember */}
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2.5">
-                  <input
-                    type="checkbox"
-                    id="remember"
-                    className="w-4 h-4 rounded border-gray-300 accent-violet-600"
-                  />
-
-                  <label
-                    htmlFor="remember"
-                    className="text-[12px] text-gray-400 font-medium cursor-pointer"
-                  >
-                    Remember me
-                  </label>
-                </div>
-
-                <Link
-                  to="/forgot-password"
-                  className="text-[12px] font-semibold text-violet-600 hover:text-violet-700"
-                >
-                  Forgot Password?
-                </Link>
-              </div>
-
-              <div className="pt-2">
-                {/* <AuthButton text="Sign In" /> */}
-                <ButtonTwo onClick={handleLogin} name={'Login'}/>
-              </div>
-            </form>
-
-            <AuthSocialSection dividerText="Or continue with" />
-          </div>
-        </div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="group inline-flex w-full items-center justify-center gap-2.5 rounded-lg border-none bg-espresso px-6 py-4 text-[13px] font-medium text-linen transition-colors duration-300 hover:bg-espresso-soft disabled:cursor-not-allowed disabled:bg-espresso/40"
+            >
+              {isLoading ? "Signing in..." : "Sign in"}
+              {!isLoading && (
+                <FiArrowUpRight
+                  size={15}
+                  className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                />
+              )}
+            </button>
+          </form>
+        </motion.div>
       </div>
     </div>
   );
