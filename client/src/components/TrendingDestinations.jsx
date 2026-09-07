@@ -1,50 +1,8 @@
 import React from 'react'
-
-const DESTINATIONS = [
-  {
-    id: 1,
-    city: 'Kuala Lumpur',
-    flag: '🇲🇾',
-    image: 'https://images.unsplash.com/photo-1596422846543-75c6fc197f07?w=800&h=500&fit=crop&q=80',
-    properties: '1,240'
-  },
-  {
-    id: 2,
-    city: 'Dhaka',
-    flag: '🇧🇩',
-    // Public domain skyline, kept locally so the card cannot 404 again
-    image: '/destinations/dhaka.jpg',
-    properties: '980'
-  },
-  {
-    id: 3,
-    city: 'Bangkok',
-    flag: '🇹🇭',
-    image: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=800&h=500&fit=crop&q=80',
-    properties: '2,100'
-  },
-  {
-    id: 4,
-    city: 'Singapore',
-    flag: '🇸🇬',
-    image: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=800&h=500&fit=crop&q=80',
-    properties: '1,560'
-  },
-  {
-    id: 5,
-    city: 'Dubai',
-    flag: '🇦🇪',
-    image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&h=500&fit=crop&q=80',
-    properties: '1,890'
-  },
-  {
-    id: 6,
-    city: 'Istanbul',
-    flag: '🇹🇷',
-    image: 'https://images.unsplash.com/photo-1541432901042-2d8bd64b4a9b?w=800&h=500&fit=crop&q=80',
-    properties: '1,340'
-  }
-]
+import { Link } from 'react-router'
+import { motion } from 'framer-motion'
+import { FiArrowUpRight } from 'react-icons/fi'
+import { useGetDestinationsQuery } from '../store/api/destinationApi'
 
 // A destination that loses its photograph should still look like a place worth
 // going, not an empty grey panel in the middle of the grid
@@ -56,86 +14,123 @@ const handleImageError = (event) => {
   event.target.src = FALLBACK_IMAGE
 }
 
+/**
+ * TrendingDestinations - the cities an editor has chosen to push, from the
+ * database rather than from a list baked into this file.
+ *
+ * The count on each card is the number of published homes that city actually
+ * has. The hard-coded version advertised "1,240 properties" for a city with
+ * none, which is the sort of thing a visitor finds out one click later.
+ */
 const TrendingDestinations = () => {
+  const { data, isLoading } = useGetDestinationsQuery()
+  const destinations = data?.destinations || []
+
+  if (isLoading) {
+    return (
+      <section className="bg-linen py-20 sm:py-24">
+        <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
+          <div className="h-8 w-64 animate-pulse rounded bg-cream" />
+          <div className="mt-10 grid gap-5 md:grid-cols-2">
+            <div className="h-[300px] animate-pulse rounded-2xl bg-cream" />
+            <div className="h-[300px] animate-pulse rounded-2xl bg-cream" />
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  // Nothing to push is a legitimate state - an editor has simply not set any up
+  if (!destinations.length) return null
+
+  const [first, second, ...rest] = destinations
+
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 font-sans">
-      {/* Section Header */}
-      <div className="mb-6">
-        <h2 className="text-3xl font-serif font-bold text-espresso tracking-tight">
-          Trending destinations
-        </h2>
-        <p className="text-sm text-espresso-soft/55 mt-1">
-          Most popular choices for travelers from Bangladesh
-        </p>
-      </div>
+    <section className="bg-linen py-20 sm:py-24">
+      <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
 
-      {/* Destinations Grid — 2 large + 3 small like smartLET */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        {DESTINATIONS.slice(0, 2).map((dest) => (
-          <div
-            key={dest.id}
-            className="group relative h-[260px] md:h-[390px] rounded-xl overflow-hidden cursor-pointer"
-          >
-            <img
-              src={dest.image}
-              alt={dest.city}
-              onError={handleImageError}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-            />
-            {/* Overlay gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent group-hover:from-black/70 transition-all duration-300" />
-            
-            {/* City name with flag */}
-            <div className="absolute top-5 left-5 z-10">
-              <h3 className="text-xl md:text-2xl font-serif font-bold text-white drop-shadow-lg flex items-center gap-2">
-                {dest.city} <span className="text-xl">{dest.flag}</span>
-              </h3>
-            </div>
-
-            {/* Property count badge */}
-            <div className="absolute bottom-5 left-5 z-10">
-              <span className="bg-linen/90 backdrop-blur-sm text-espresso text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-                {dest.properties} properties
-              </span>
-            </div>
+        <div className="flex items-end justify-between gap-6">
+          <div>
+            <h2 className="font-sans text-[28px] font-semibold tracking-[-0.025em] text-espresso sm:text-[36px]">
+              Trending destinations
+            </h2>
+            <p className="mt-2 text-[13.5px] text-espresso-soft/70">
+              Cities people are booking most on the platform right now
+            </p>
           </div>
-        ))}
-      </div>
 
-      {/* Bottom row: 3 smaller cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {DESTINATIONS.slice(2, 5).map((dest) => (
-          <div
-            key={dest.id}
-            className="group relative h-[200px] md:h-[250px] rounded-xl overflow-hidden cursor-pointer"
+          <Link
+            to="/properties"
+            className="group hidden items-center gap-2 text-[13px] font-medium text-espresso-soft transition-colors duration-300 hover:text-espresso sm:inline-flex"
           >
-            <img
-              src={dest.image}
-              alt={dest.city}
-              onError={handleImageError}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            See all
+            <FiArrowUpRight
+              size={14}
+              className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
             />
-            {/* Overlay gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent group-hover:from-black/70 transition-all duration-300" />
-            
-            {/* City name with flag */}
-            <div className="absolute top-4 left-4 z-10">
-              <h3 className="text-lg font-serif font-bold text-white drop-shadow-lg flex items-center gap-2">
-                {dest.city} <span className="text-base">{dest.flag}</span>
-              </h3>
-            </div>
+          </Link>
+        </div>
 
-            {/* Property count badge */}
-            <div className="absolute bottom-4 left-4 z-10">
-              <span className="bg-linen/90 backdrop-blur-sm text-espresso text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-                {dest.properties} properties
-              </span>
-            </div>
+        {/* The first two get the large tiles, which is what the order field is for */}
+        <div className="mt-10 grid gap-5 md:grid-cols-2">
+          {[first, second].filter(Boolean).map((destination, index) => (
+            <DestinationCard key={destination._id} destination={destination} index={index} tall />
+          ))}
+        </div>
+
+        {rest.length > 0 && (
+          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {rest.map((destination, index) => (
+              <DestinationCard key={destination._id} destination={destination} index={index} />
+            ))}
           </div>
-        ))}
+        )}
       </div>
     </section>
   )
 }
+
+/**
+ * One city. Clicking it runs the search rather than going to a page that would
+ * only have to ask the same question again.
+ */
+const DestinationCard = ({ destination, index, tall = false }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 26 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: '-60px' }}
+    transition={{ duration: 0.7, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
+  >
+    <Link
+      to={`/properties?destination=${encodeURIComponent(destination.city)}`}
+      className={`group relative block overflow-hidden rounded-2xl ${tall ? 'h-[300px] sm:h-[340px]' : 'h-[220px]'}`}
+    >
+      <img
+        src={destination.image}
+        alt={`${destination.city}, ${destination.country}`}
+        onError={handleImageError}
+        loading="lazy"
+        className="absolute inset-0 h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.06]"
+      />
+
+      <div className="absolute inset-0 bg-gradient-to-t from-espresso/85 via-espresso/15 to-espresso/10" />
+
+      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 sm:p-6">
+        <div>
+          <p className={`font-sans font-semibold tracking-[-0.02em] text-linen ${tall ? 'text-[22px]' : 'text-[17px]'}`}>
+            {destination.city} {destination.flag}
+          </p>
+          <p className="mt-1 text-[12px] text-linen/70">
+            {destination.propertyCount} {destination.propertyCount === 1 ? 'home' : 'homes'} · {destination.country}
+          </p>
+        </div>
+
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-linen/15 text-linen backdrop-blur-md transition-colors duration-300 group-hover:bg-linen group-hover:text-espresso">
+          <FiArrowUpRight size={15} />
+        </span>
+      </div>
+    </Link>
+  </motion.div>
+)
 
 export default TrendingDestinations

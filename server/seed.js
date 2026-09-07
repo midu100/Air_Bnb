@@ -4,6 +4,7 @@ const dbConfig = require('./dbConfig')
 const userSchema = require('./models/authSchema')
 const categorySchema = require('./models/categorySchema')
 const amenitySchema = require('./models/amenitySchema')
+const destinationSchema = require('./models/destinationSchema')
 const propertySchema = require('./models/propertySchema')
 const bookingSchema = require('./models/bookingSchema')
 const paymentSchema = require('./models/paymentSchema')
@@ -49,6 +50,19 @@ const AMENITIES = [
 ]
 
 const img = (id) => `https://images.unsplash.com/photo-${id}?w=1200&h=800&fit=crop&q=80`
+
+// ====== Trending destinations
+// Every city here owns listings on the platform, so the count the card shows a
+// visitor is the number of homes they will actually find when they click it.
+// The order decides the layout: the first two take the large tiles.
+const DESTINATIONS = [
+    { city: 'Dhaka',     country: 'Bangladesh',     flag: '\u{1F1E7}\u{1F1E9}', slug: 'dhaka',     order: 1, image: '/destinations/dhaka.jpg' },
+    { city: 'Dubai',     country: 'United Arab Emirates', flag: '\u{1F1E6}\u{1F1EA}', slug: 'dubai', order: 2, image: img('1512453979798-5ea266f8880c') },
+    { city: 'London',    country: 'United Kingdom', flag: '\u{1F1EC}\u{1F1E7}', slug: 'london',    order: 3, image: img('1513635269975-59663e0ac1ad') },
+    { city: 'New York',  country: 'United States',  flag: '\u{1F1FA}\u{1F1F8}', slug: 'new-york',  order: 4, image: img('1496442226666-8d4d0e62e6e9') },
+    { city: 'Tokyo',     country: 'Japan',          flag: '\u{1F1EF}\u{1F1F5}', slug: 'tokyo',     order: 5, image: img('1540959733332-eab4deabeeaf') },
+    { city: 'Barcelona', country: 'Spain',          flag: '\u{1F1EA}\u{1F1F8}', slug: 'barcelona', order: 6, image: img('1583422409516-2895a77efded') },
+]
 
 const PROPERTIES = [
     {
@@ -464,6 +478,15 @@ const seed = async () => {
             amenityIds.push(amenity._id)
         }
         console.log(`amenities ready: ${amenityIds.length}`)
+
+        // ====== Trending destinations
+        let destinationsReady = 0
+        for (const item of DESTINATIONS) {
+            let destination = await destinationSchema.findOne({ slug: item.slug })
+            if (!destination) destination = await destinationSchema.create(item)
+            destinationsReady += 1
+        }
+        console.log(`destinations ready: ${destinationsReady}`)
 
         // ====== Properties
         let created = 0

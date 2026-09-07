@@ -48,6 +48,9 @@ import AdminPricingRules from './pages/admin/PricingRules'
 import AddProperty from './pages/admin/AddProperty'
 import EditProperty from './pages/admin/EditProperty'
 import AddCategory from './pages/admin/AddCategory'
+import AdminDestinations from './pages/admin/Destinations'
+import AddDestination from './pages/admin/AddDestination'
+import EditDestination from './pages/admin/EditDestination'
 import AddAmenity from './pages/admin/AddAmenity'
 import EditAmenity from './pages/admin/EditAmenity'
 import { ToastContainer } from 'react-toastify';
@@ -79,6 +82,9 @@ const App = () => {
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="categories/add" element={<AddCategory />} />
+            <Route path="destinations" element={<AdminDestinations />} />
+            <Route path="destinations/add" element={<AddDestination />} />
+            <Route path="destinations/edit/:id" element={<EditDestination />} />
             <Route path="amenities" element={<AdminAmenities />} />
             <Route path="amenities/add" element={<AddAmenity />} />
             <Route path="amenities/edit/:id" element={<EditAmenity />} />
