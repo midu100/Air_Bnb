@@ -1,45 +1,20 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React from 'react'
 import { Link } from 'react-router'
-import { motion, useScroll, useTransform } from 'framer-motion'
-import { FiArrowDown, FiArrowUpRight } from 'react-icons/fi'
-import ScrollPanorama from './ScrollPanorama'
+import { motion } from 'framer-motion'
+import { FiArrowUpRight } from 'react-icons/fi'
 import { useGetFeaturedPropertiesQuery } from '../store/api/propertyApi'
 
-const PANORAMA = '/panorama/lounge-360.jpg'
 const FALLBACK_EXTERIOR =
   'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=2400&h=1600&fit=crop&q=85'
 
-// Where the photograph sits before the scroll opens it out
-const BAND_TOP = 46
-
-// A 0..1 ramp between two points on the scroll, eased so nothing snaps
-const ramp = (value, from, to) => {
-  const t = Math.min(1, Math.max(0, (value - from) / (to - from)))
-  return t * t * (3 - 2 * t)
-}
-
 /**
- * The hero reads as a page first and a photograph second.
+ * The hero: the line, then the home, on one screen.
  *
- *   outside   the line on white, the home lying across the foot of the page
- *   entering  the photograph climbs the page and pushes toward you
- *   inside    it has covered everything and opened into the room behind it
- *
- * The photograph is opened by animating its clip-path, so the picture climbs
- * the page rather than the whole layer growing out from its own middle.
- *
- * Every opacity is written straight to the DOM. Driving opacity through
- * framer-motion on a pinned section leaves the value frozen while transforms
- * carry on updating.
+ * The copy block takes whatever height it needs and the photograph takes the
+ * rest, so the two can never land on top of each other however tall the
+ * headline wraps or however short the window is.
  */
 const HeroSection = () => {
-  const sectionRef = useRef(null)
-  const imageRef = useRef(null)
-  const copyRef = useRef(null)
-  const scrimRef = useRef(null)
-
-  const [phase, setPhase] = useState('outside')
-
   const { data: featuredData } = useGetFeaturedPropertiesQuery()
 
   // A hero photograph wants the outside of a building, and an apartment is
@@ -49,158 +24,104 @@ const HeroSection = () => {
   const showcase = featured.find((home) => ['House', 'Villa'].includes(home.propertyType)) || featured[0] || null
   const exterior = showcase?.thumbnail || FALLBACK_EXTERIOR
 
-  // ====== Scroll
-  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end end'] })
-
-  const panoramaProgress = useRef(0)
-  useEffect(() => {
-    const apply = (value) => {
-      panoramaProgress.current = Math.min(1, Math.max(0, (value - 0.48) / 0.44))
-
-      if (copyRef.current) copyRef.current.style.opacity = String(1 - ramp(value, 0.02, 0.24))
-      // The photograph only hands over to the room once it has pushed far
-      // enough past you to have stopped reading as a photograph
-      if (imageRef.current) imageRef.current.style.opacity = String(1 - ramp(value, 0.62, 0.86))
-      // It also has to darken on the way in, or the room arrives out of nowhere
-      if (scrimRef.current) scrimRef.current.style.opacity = String(ramp(value, 0.3, 0.75) * 0.55)
-
-      setPhase(value > 0.82 ? 'inside' : value > 0.2 ? 'entering' : 'outside')
-    }
-    apply(scrollYProgress.get())
-    return scrollYProgress.on('change', apply)
-  }, [scrollYProgress])
-
-  // The band of photograph climbs the page until it has covered the line
-  const clipTop = useTransform(scrollYProgress, [0, 0.55], [`${BAND_TOP}%`, '0%'])
-  const frameClip = useTransform(clipTop, (top) => `inset(${top} 0% 0% 0%)`)
-  const imageScale = useTransform(scrollYProgress, [0, 0.86], [1.05, 2.9])
-  const copyY = useTransform(scrollYProgress, [0, 0.3], [0, -80])
-
   const line = {
     hidden: { y: '110%' },
     show: (i) => ({
       y: '0%',
-      transition: { duration: 1.05, delay: 0.25 + i * 0.1, ease: [0.22, 1, 0.36, 1] },
+      transition: { duration: 1.05, delay: 0.2 + i * 0.1, ease: [0.22, 1, 0.36, 1] },
     }),
   }
 
-  const isOutside = phase === 'outside'
-  const isInside = phase === 'inside'
-
   return (
-    <section ref={sectionRef} className="relative h-[220vh]">
-      <div className="sticky top-0 h-screen overflow-hidden bg-linen">
+    <section className="flex min-h-screen flex-col bg-linen">
 
-        {/* ====== The room, waiting behind the photograph ====== */}
-        <div className="absolute inset-0">
-          <ScrollPanorama imageSrc={PANORAMA} progressRef={panoramaProgress} interactive={isInside} />
-        </div>
+      {/* ====== The line ====== */}
+      <div className="mx-auto w-full max-w-[1400px] shrink-0 px-6 pb-10 pt-28 sm:px-10 sm:pt-32">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,290px)] lg:items-start lg:gap-16">
+          <h1 className="max-w-[13ch] font-sans text-[42px] font-semibold leading-[0.94] tracking-[-0.035em] text-espresso sm:text-[62px] lg:text-[76px] xl:text-[86px]">
+            {['Find somewhere', "you'll call home"].map((text, i) => (
+              <span key={text} className="block overflow-hidden pb-[0.06em]">
+                <motion.span variants={line} custom={i} initial="hidden" animate="show" className="block">
+                  {text}
+                </motion.span>
+              </span>
+            ))}
+          </h1>
 
-        {/* ====== The home, climbing the page ====== */}
-        <motion.div
-          ref={imageRef}
-          style={{ clipPath: frameClip }}
-          className="absolute inset-0 will-change-[clip-path]"
-        >
-          <motion.img
-            src={exterior}
-            alt={showcase ? showcase.title : 'A home on the platform'}
-            style={{ scale: imageScale }}
-            className="h-full w-full object-cover will-change-transform"
-          />
-          <div ref={scrimRef} className="absolute inset-0 bg-espresso" style={{ opacity: 0 }} />
-        </motion.div>
-
-        {/* ====== The line, on the white ====== */}
-        <motion.div
-          ref={copyRef}
-          style={{ y: copyY }}
-          className="relative z-10 mx-auto w-full max-w-[1400px] px-6 pt-32 will-change-transform sm:px-10 sm:pt-36 lg:pt-40"
-        >
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,280px)] lg:items-start lg:gap-16">
-            <h1 className="max-w-[13ch] font-sans text-[46px] font-semibold leading-[0.94] tracking-[-0.035em] text-espresso sm:text-[70px] lg:text-[86px] xl:text-[96px]">
-              {['Find somewhere', "you'll call home"].map((text, i) => (
-                <span key={text} className="block overflow-hidden pb-[0.06em]">
-                  <motion.span variants={line} custom={i} initial="hidden" animate="show" className="block">
-                    {text}
-                  </motion.span>
-                </span>
-              ))}
-            </h1>
-
-            <p className="max-w-[34ch] text-[13.5px] leading-relaxed text-espresso-soft/75 lg:pt-4">
-              Not just somewhere to sleep. Homes you can take for three nights, three months or
-              three years - visited by us before any of them reach this page.
-            </p>
-          </div>
-
-          <div className="mt-10 flex flex-wrap items-center gap-3">
-            <Link
-              to="/properties"
-              className="group inline-flex items-center gap-2.5 rounded-lg bg-espresso px-6 py-3.5 text-[13px] font-medium text-linen transition-colors duration-300 hover:bg-espresso-soft"
-            >
-              Browse homes
-              <FiArrowUpRight size={15} className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-            </Link>
-
-            <Link
-              to="/admin/properties"
-              className="inline-flex items-center gap-2.5 rounded-lg border border-espresso-line px-6 py-3.5 text-[13px] font-medium text-espresso transition-colors duration-300 hover:border-espresso"
-            >
-              Post a property
-            </Link>
-          </div>
-        </motion.div>
-
-        {/* ====== Inside ====== */}
-        <div
-          className={`absolute inset-x-0 bottom-0 z-20 mx-auto max-w-[1400px] px-6 pb-14 transition-all duration-700 sm:px-10 ${
-            isInside ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-6 opacity-0'
-          }`}
-        >
-          <div className="flex flex-col gap-5 rounded-2xl border border-linen/15 bg-espresso/50 p-7 backdrop-blur-xl sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="eyebrow text-bronze-soft">Drag to look around</p>
-              <p className="mt-3 max-w-[30ch] font-sans text-[26px] font-semibold leading-tight tracking-[-0.02em] text-linen sm:text-[32px]">
-                {showcase ? showcase.title : 'Every listing opens like this'}
-              </p>
-              {showcase && (
-                <p className="mt-2 text-[13px] text-linen/60">
-                  {showcase.city}, {showcase.country} · from ${showcase.pricePerNight}/night
-                </p>
-              )}
-            </div>
-
-            {showcase && (
-              <Link
-                to={`/property/${showcase._id}`}
-                className="group inline-flex w-fit items-center gap-2.5 rounded-lg bg-linen px-6 py-3.5 text-[13px] font-medium text-espresso transition-colors duration-300 hover:bg-cream"
-              >
-                See this home
-                <FiArrowUpRight size={15} className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </Link>
-            )}
-          </div>
-        </div>
-
-        {/* ====== Scroll cue ====== */}
-        <div
-          className={`absolute bottom-7 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 transition-opacity duration-500 ${
-            isOutside ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          <span className="rounded-full bg-espresso/45 px-4 py-1.5 text-[9px] uppercase tracking-[0.4em] text-linen backdrop-blur-md">
-            Scroll to step inside
-          </span>
-          <motion.span
-            animate={{ y: [0, 7, 0] }}
-            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-            className="text-linen drop-shadow-[0_1px_4px_rgba(28,24,20,0.6)]"
+          <motion.p
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="max-w-[36ch] text-[13.5px] leading-relaxed text-espresso-soft/75 lg:pt-3"
           >
-            <FiArrowDown size={14} />
-          </motion.span>
+            Not just somewhere to sleep. Homes you can take for three nights, three months or three
+            years - visited by us before any of them reach this page.
+          </motion.p>
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.62, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-9 flex flex-wrap items-center gap-3"
+        >
+          <Link
+            to="/properties"
+            className="group inline-flex items-center gap-2.5 rounded-lg bg-espresso px-6 py-3.5 text-[13px] font-medium text-linen transition-colors duration-300 hover:bg-espresso-soft"
+          >
+            Browse homes
+            <FiArrowUpRight
+              size={15}
+              className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+            />
+          </Link>
+
+          <Link
+            to="/admin/properties"
+            className="inline-flex items-center gap-2.5 rounded-lg border border-espresso-line bg-transparent px-6 py-3.5 text-[13px] font-medium text-espresso transition-colors duration-300 hover:border-espresso"
+          >
+            Post a property
+          </Link>
+        </motion.div>
       </div>
+
+      {/* ====== The home ====== */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.1, delay: 0.3, ease: 'easeOut' }}
+        className="relative min-h-[300px] w-full flex-1 overflow-hidden bg-cream sm:min-h-[380px]"
+      >
+        <img
+          src={exterior}
+          alt={showcase ? showcase.title : 'A home on the platform'}
+          // Architectural photographs put the building above the middle of the
+          // frame, so a centred crop fills the hero with paving
+          style={{ objectPosition: 'center 38%' }}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+
+        {showcase && (
+          <>
+            <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-espresso/75 via-espresso/30 to-transparent" />
+            <Link
+              to={`/property/${showcase._id}`}
+              className="group absolute bottom-7 left-6 flex items-center gap-3 text-linen sm:bottom-9 sm:left-10"
+            >
+              <span>
+                <span className="block text-[14px] font-medium">{showcase.title}</span>
+                <span className="mt-0.5 block text-[12px] text-linen/80">
+                  {showcase.city}, {showcase.country} · from ${showcase.pricePerNight}/night
+                </span>
+              </span>
+              <FiArrowUpRight
+                size={16}
+                className="shrink-0 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+              />
+            </Link>
+          </>
+        )}
+      </motion.div>
     </section>
   )
 }

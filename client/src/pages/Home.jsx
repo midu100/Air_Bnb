@@ -6,7 +6,6 @@ import CategoryCarousel from '../components/CategoryCarousel'
 import TrendingDestinations from '../components/TrendingDestinations'
 import PropertyCarousel from '../components/PropertyCarousel'
 import FindYourHome from '../components/FindYourHome'
-import StepInsideShowcase from '../components/StepInsideShowcase'
 import RentalHorizons from '../components/RentalHorizons'
 import HostEarnings from '../components/HostEarnings'
 import HowItWorks from '../components/HowItWorks'
@@ -85,9 +84,6 @@ const Home = () => {
 
       {/* The search itself, before anything else asks for their attention */}
       <FindYourHome />
-
-      {/* Walk through three real homes the way the hero walked you into one */}
-      {!loading && <StepInsideShowcase properties={properties} />}
 
       {/* The three ways to take a home here - the platform's whole point */}
       <RentalHorizons />
