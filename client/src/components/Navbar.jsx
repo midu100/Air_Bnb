@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router'
 import { useSelector, useDispatch } from 'react-redux'
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'framer-motion'
 import { HiMenuAlt4, HiOutlineX, HiOutlineShoppingCart } from 'react-icons/hi'
@@ -26,9 +26,11 @@ const Navbar = () => {
   const { scrollY } = useScroll()
   useMotionValueEvent(scrollY, 'change', (latest) => setScrolled(latest > 80))
 
-  // Every page now opens on a light ground, the home page included, so the bar
-  // only ever changes its own background - never the colour of the type on it
-  const onDark = false
+  // Only the home page opens on a full-bleed photograph. Everywhere else the
+  // ground is light from the first pixel, so the bar must not go pale there -
+  // that is what made every link invisible when the palette changed.
+  const { pathname } = useLocation()
+  const onDark = pathname === '/' && !scrolled
 
   const handleLogout = async () => {
     // httpOnly cookies cannot be cleared from JS, the server has to expire them
@@ -86,7 +88,7 @@ const Navbar = () => {
           {/* ====== Logo ====== */}
           <Link to="/" className="flex items-center gap-3">
             <span className={`flex h-9 w-9 items-center justify-center border font-serif text-[17px] ${
-              'border-bronze/50 text-bronze'
+              onDark ? 'border-linen/60 text-linen' : 'border-bronze/50 text-bronze'
             }`}>
               E
             </span>
