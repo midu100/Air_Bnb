@@ -52,8 +52,9 @@ const FRAGMENT_SHADER = `
     float vignette = 1.0 - 0.32 * dot(v_uv, v_uv);
     room *= vignette;
 
-    // Fade up out of the cream ground so the room arrives rather than cuts in
-    gl_FragColor = vec4(mix(vec3(0.961, 0.945, 0.910), room, u_fade), 1.0);
+    // Fade up out of the page's own ground so the room arrives rather than
+    // cuts in - this has to stay in step with --color-linen
+    gl_FragColor = vec4(mix(vec3(0.992, 0.984, 0.969), room, u_fade), 1.0);
   }
 `
 
@@ -125,11 +126,11 @@ const ScrollPanorama = ({ imageSrc, progressRef, interactive = false, className 
       fade: gl.getUniformLocation(program, 'u_fade'),
     }
 
-    // A single cream pixel stands in until the photograph arrives, so a slow
+    // A single linen pixel stands in until the photograph arrives, so a slow
     // network shows the page's own ground rather than a dark hole
     const texture = gl.createTexture()
     gl.bindTexture(gl.TEXTURE_2D, texture)
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([245, 241, 232, 255]))
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([253, 251, 247, 255]))
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
