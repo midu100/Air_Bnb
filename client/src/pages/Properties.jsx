@@ -23,11 +23,25 @@ const Properties = () => {
     ? searchParams.get('rentalType')
     : 'short'
 
+  // The price slider works in whatever unit the horizon is priced in, so a
+  // link that arrives asking for monthly stays has to bring the monthly ceiling
+  // with it. Left at the nightly default it filtered out every monthly home.
+  const horizonParam = HORIZONS.find((item) => item.id === rentalParam) || HORIZONS[0]
+  const maxPriceParam = Number(searchParams.get('maxPrice')) || horizonParam.max
+
+  // Filters the home page hands over when someone presses "Show homes" there.
+  // Without these the count they were shown and the page they land on disagree.
+  const handoffFilters = {}
+  for (const key of ['country', 'propertyType', 'bedrooms', 'minPrice']) {
+    const value = searchParams.get(key)
+    if (value) handoffFilters[key] = value
+  }
+
   const [destination, setDestination] = useState(destParam)
   const [guests, setGuests] = useState(guestParam)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [rentalType, setRentalType] = useState(rentalParam)
-  const [maxPrice, setMaxPrice] = useState(1000)
+  const [maxPrice, setMaxPrice] = useState(maxPriceParam)
   const [page, setPage] = useState(1)
 
   const horizon = HORIZONS.find((item) => item.id === rentalType) || HORIZONS[0]
@@ -44,6 +58,7 @@ const Properties = () => {
     setDestination(destParam)
     setGuests(guestParam)
     setRentalType(rentalParam)
+    setMaxPrice(maxPriceParam)
     setPage(1)
   }
 
@@ -88,6 +103,7 @@ const Properties = () => {
     limit: PAGE_SIZE,
     rentalType,
     maxPrice,
+    ...handoffFilters,
     ...(debouncedDestination ? { destination: debouncedDestination } : {}),
     ...(selectedCategory !== 'all' ? { category: selectedCategory } : {}),
     ...(guests !== '1' ? { maxGuests: guests } : {}),
