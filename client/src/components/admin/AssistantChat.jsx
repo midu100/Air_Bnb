@@ -1,3 +1,4 @@
+import AssistantAnswer from './AssistantAnswer';
 import React, { useEffect, useRef, useState } from 'react';
 import { HiOutlineSparkles, HiOutlineCheck, HiOutlineX, HiOutlinePaperAirplane } from 'react-icons/hi';
 import { toast } from 'react-hot-toast';
@@ -156,7 +157,7 @@ const AssistantChat = ({ compact = false, autoFocus = false }) => {
             {turn.answer && (
               <div className="flex justify-start">
                 <div className="bg-neutral-50 border border-neutral-200 rounded px-4 py-3 max-w-[90%]">
-                  <p className="text-[13px] text-neutral-800 whitespace-pre-wrap leading-relaxed">{turn.answer}</p>
+                  <AssistantAnswer text={turn.answer} />
                   {turn.reads > 0 && (
                     <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-2">
                       {turn.reads} data lookup{turn.reads === 1 ? '' : 's'}

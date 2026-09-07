@@ -33,8 +33,8 @@ const gemini = {
     capabilities: { tools: true },
     // Overridable, because Google renames these more often than anyone
     models: {
-        responder: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
-        classifier: process.env.GEMINI_CLASSIFIER_MODEL || 'gemini-2.0-flash-lite',
+        responder: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
+        classifier: process.env.GEMINI_CLASSIFIER_MODEL || 'gemini-3.6-flash-lite',
     },
 
     async send({ apiKey, model, system, messages, tools, signal }) {
@@ -58,7 +58,11 @@ const gemini = {
             const parts = []
             if (message.text) parts.push({ text: message.text })
             for (const call of message.toolCalls || []) {
-                parts.push({ functionCall: { name: call.name, args: call.args || {} } })
+                const part = { functionCall: { name: call.name, args: call.args || {} } }
+                // Gemini 3 refuses a function call replayed without the opaque
+                // signature it issued with it, so it has to travel back intact
+                if (call.signature) part.thoughtSignature = call.signature
+                parts.push(part)
             }
             if (!parts.length) continue
 
@@ -103,6 +107,8 @@ const gemini = {
                 id: `${part.functionCall.name}-${index}`,
                 name: part.functionCall.name,
                 args: part.functionCall.args || {},
+                // Opaque to us; handed straight back on the next turn
+                signature: part.thoughtSignature,
             }))
 
         return { text, toolCalls }
