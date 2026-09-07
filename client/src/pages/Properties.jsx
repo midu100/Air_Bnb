@@ -17,11 +17,16 @@ const Properties = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const destParam = searchParams.get('destination') || ''
   const guestParam = searchParams.get('guests') || '1'
+  // A link can arrive asking for a horizon - the home page sends people
+  // straight to monthly stays or to leases
+  const rentalParam = HORIZONS.some((item) => item.id === searchParams.get('rentalType'))
+    ? searchParams.get('rentalType')
+    : 'short'
 
   const [destination, setDestination] = useState(destParam)
   const [guests, setGuests] = useState(guestParam)
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [rentalType, setRentalType] = useState('short')
+  const [rentalType, setRentalType] = useState(rentalParam)
   const [maxPrice, setMaxPrice] = useState(1000)
   const [page, setPage] = useState(1)
 
@@ -29,11 +34,16 @@ const Properties = () => {
 
   // Sync inputs if URL params change - adjusted during render, not in an effect,
   // so it does not trigger a second cascading render
-  const [urlParams, setUrlParams] = useState({ destParam, guestParam })
-  if (urlParams.destParam !== destParam || urlParams.guestParam !== guestParam) {
-    setUrlParams({ destParam, guestParam })
+  const [urlParams, setUrlParams] = useState({ destParam, guestParam, rentalParam })
+  if (
+    urlParams.destParam !== destParam ||
+    urlParams.guestParam !== guestParam ||
+    urlParams.rentalParam !== rentalParam
+  ) {
+    setUrlParams({ destParam, guestParam, rentalParam })
     setDestination(destParam)
     setGuests(guestParam)
+    setRentalType(rentalParam)
     setPage(1)
   }
 
@@ -118,7 +128,7 @@ const Properties = () => {
               onClick={() => handleHorizonChange(item.id)}
               className={`px-4 py-2.5 rounded-2xl border text-left transition-all cursor-pointer ${
                 rentalType === item.id
-                  ? 'border-[#f0506e] bg-[#f0506e]/5 text-[#f0506e]'
+                  ? 'border-bronze bg-bronze/5 text-bronze'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
               }`}
             >
